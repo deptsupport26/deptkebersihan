@@ -7,14 +7,8 @@
   <!-- Tailwind CSS & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body { padding-bottom: 80px; } /* Ruang untuk scroll di HP */
-    .tab-active { background-color: #0284c7; color: white; }
-    .tab-inactive { background-color: #e0f2fe; color: #0284c7; }
-    /* Loading Spinner */
-    .loader { border-top-color: #0284c7; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
-    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  </style>
+  <!-- CSS Kustom -->
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
@@ -22,7 +16,9 @@
   <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 px-4 py-3">
     <div class="flex items-center justify-between mb-3">
       <h1 class="text-xl font-bold text-sky-700"><i class="fa-solid fa-leaf mr-2"></i>Dep. Kebersihan</h1>
-      <span class="text-xs bg-sky-100 text-sky-800 px-2 py-1 rounded-full font-semibold">CABR</span>
+      <button onclick="openAddModal()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all">
+        <i class="fa-solid fa-plus mr-1"></i> Tambah Barang
+      </button>
     </div>
     
     <!-- Tab Navigasi -->
@@ -45,7 +41,7 @@
       <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
         <i class="fa-solid fa-magnifying-glass"></i>
       </div>
-      <input type="text" id="search" oninput="renderData()" class="bg-white border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-3 shadow-sm" placeholder="Cari barang, box...">
+      <input type="text" id="search" oninput="renderData()" class="bg-white border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-3 shadow-sm" placeholder="Cari barang, box, lokasi...">
     </div>
 
     <!-- Status Loading -->
@@ -58,215 +54,60 @@
     <div id="content" class="space-y-4"></div>
   </main>
 
-  <script>
-    // URL Web App Anda
-    const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
-    
-    let currentTab = 'inventaris';
-    let allData = { inventaris: [], jadwal: [], relawan: [] };
-
-    document.addEventListener('DOMContentLoaded', loadAllData);
-
-    async function loadAllData() {
-      document.getElementById('loading').style.display = 'flex';
-      document.getElementById('content').innerHTML = '';
+  <!-- Modal Tambah Barang & Kompres Foto -->
+  <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-800">Tambah Barang Baru</h3>
+        <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+      </div>
       
-      try {
-        const [invRes, jadRes, relRes] = await Promise.all([
-          fetch(API_URL + "?type=inventaris"),
-          fetch(API_URL + "?type=jadwal"),
-          fetch(API_URL + "?type=relawan")
-        ]);
-
-        const invJson = await invRes.json();
-        const jadJson = await jadRes.json();
-        const relJson = await relRes.json();
-
-        allData.inventaris = invJson.data || [];
-        allData.jadwal = jadJson.data || [];
-        allData.relawan = relJson.data || [];
-
-        document.getElementById('loading').style.display = 'none';
-        renderData();
-      } catch (err) {
-        document.getElementById('loading').innerHTML = `
-          <div class="text-center py-8">
-            <i class="fa-solid fa-triangle-exclamation text-3xl text-red-400 mb-3"></i>
-            <p class="text-slate-600 mb-4">Gagal memuat data dari server.</p>
-            <button onclick="loadAllData()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg font-semibold text-sm transition-colors">Coba Lagi</button>
+      <form id="addItemForm" onsubmit="submitNewItem(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nama Barang</label>
+          <input type="text" id="newName" required class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-sky-500 focus:border-sky-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Kategori</label>
+            <select id="newCategory" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm bg-white">
+              <option value="Alat / Sabun">Alat / Sabun</option>
+              <option value="Habis Pakai">Habis Pakai</option>
+            </select>
           </div>
-        `;
-      }
-    }
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Lokasi / Box</label>
+            <input type="text" id="newLocation" placeholder="Contoh: Box 1" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Total Stok</label>
+            <input type="number" id="newTotal" required value="1" min="1" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Satuan</label>
+            <input type="text" id="newUnit" placeholder="pcs / botol / pack" required class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Upload Foto (Kamera / Galeri HP)</label>
+          <input type="file" id="newPhoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+          <p class="text-[10px] text-slate-400 mt-1">Foto akan otomatis dikompres agar ringan saat diunggah.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Keterangan</label>
+          <input type="text" id="newDesc" placeholder="Catatan tambahan..." class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeAddModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-lg text-sm">Batal</button>
+          <button type="submit" id="submitBtn" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-    function switchTab(tabName) {
-      currentTab = tabName;
-      
-      // Update tampilan tombol tab
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('tab-active');
-        btn.classList.add('tab-inactive');
-      });
-      const activeBtn = document.getElementById(`tab-${tabName}`);
-      activeBtn.classList.remove('tab-inactive');
-      activeBtn.classList.add('tab-active');
-
-      // Update placeholder pencarian
-      document.getElementById('search').value = '';
-      let placeholderTxt = 'Cari...';
-      if(tabName === 'inventaris') placeholderTxt = 'Cari barang, lokasi...';
-      if(tabName === 'jadwal') placeholderTxt = 'Cari area, tugas...';
-      if(tabName === 'relawan') placeholderTxt = 'Cari nama kru...';
-      document.getElementById('search').placeholder = placeholderTxt;
-      
-      renderData();
-    }
-
-    function renderData() {
-      const keyword = document.getElementById('search').value.toLowerCase();
-      const content = document.getElementById('content');
-      content.innerHTML = '';
-      
-      let dataToRender = allData[currentTab];
-
-      if(dataToRender.length === 0) {
-        content.innerHTML = `
-          <div class="text-center py-10 bg-white rounded-xl border border-slate-100 shadow-sm">
-            <i class="fa-regular fa-folder-open text-4xl text-slate-300 mb-3"></i>
-            <p class="text-slate-500">Data belum tersedia.</p>
-          </div>`;
-        return;
-      }
-
-      dataToRender.forEach(item => {
-        const values = Object.values(item).join(' ').toLowerCase();
-        if(!values.includes(keyword)) return;
-
-        if (currentTab === 'inventaris') {
-          const sisa = Number(item.Sisa_Stok) || 0;
-          const total = Number(item.Total_Stok) || 0;
-          const dipakai = Number(item.Sedang_Dipakai) || 0;
-          
-          content.innerHTML += `
-            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm relative overflow-hidden">
-              <div class="absolute top-0 right-0 w-2 h-full ${sisa > 0 ? 'bg-green-400' : 'bg-red-400'}"></div>
-              
-              <div class="flex justify-between items-start mb-2">
-                <span class="text-xs font-bold px-2 py-1 bg-slate-100 text-slate-500 rounded-md uppercase tracking-wider">${item.Kategori || '-'}</span>
-                <span class="text-xs font-medium text-slate-500"><i class="fa-solid fa-location-dot text-red-400 mr-1"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
-              </div>
-              
-              <h3 class="text-lg font-bold text-slate-800 mb-4">${item.Nama_Barang}</h3>
-              
-              <div class="grid grid-cols-3 gap-2 bg-slate-50 rounded-lg p-3 border border-slate-100 mb-4">
-                 <div class="text-center">
-                    <div class="text-[10px] text-slate-400 uppercase font-bold">Total</div>
-                    <div class="font-semibold text-slate-700">${total}</div>
-                 </div>
-                 <div class="text-center border-l border-r border-slate-200">
-                    <div class="text-[10px] text-orange-400 uppercase font-bold">Dipakai</div>
-                    <div class="font-bold text-orange-500">${dipakai}</div>
-                 </div>
-                 <div class="text-center">
-                    <div class="text-[10px] text-green-500 uppercase font-bold">Tersedia</div>
-                    <div class="font-black text-green-600 text-lg leading-tight">${sisa} <span class="text-xs font-normal">${item.Satuan || ''}</span></div>
-                 </div>
-              </div>
-              
-              <div class="flex gap-2">
-                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center">
-                  <i class="fa-solid fa-minus mr-2"></i> Pakai 1
-                </button>
-                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)" class="flex-1 bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center">
-                  <i class="fa-solid fa-plus mr-2"></i> Kembali
-                </button>
-              </div>
-            </div>`;
-        } 
-        
-        else if (currentTab === 'jadwal') {
-          const isDone = item.Status_Pekerjaan === 'Selesai';
-          content.innerHTML += `
-            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <div class="flex justify-between items-start mb-3">
-                <span class="text-xs font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">${item.Fase_Acara}</span>
-                <span class="text-xs font-bold px-2 py-1 rounded-md ${isDone ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}">
-                  ${item.Status_Pekerjaan || 'Belum Mulai'}
-                </span>
-              </div>
-              <h3 class="text-lg font-bold text-slate-800 mb-2">${item.Area}</h3>
-              <p class="text-sm text-slate-600 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100"><i class="fa-solid fa-thumbtack text-slate-400 mr-2"></i>${item.Deskripsi_Tugas}</p>
-              
-              <div class="flex justify-between items-center text-xs font-medium text-slate-500 mb-4">
-                 <span><i class="fa-regular fa-clock mr-1 text-sky-500"></i> ${item.Shift_Waktu || '-'}</span>
-                 <span><i class="fa-regular fa-user mr-1 text-sky-500"></i> ${item.Relawan_Ditugaskan || '-'}</span>
-              </div>
-              
-              ${!isDone ? `<button onclick="actionAPI('update_task', '${item.ID_Tugas}', 'Selesai')" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center justify-center">
-                <i class="fa-solid fa-check mr-2"></i> Tandai Selesai
-              </button>` : ''}
-            </div>`;
-        }
-
-        else if (currentTab === 'relawan') {
-          const isActive = item.Status_Aktif === 'Aktif';
-          content.innerHTML += `
-            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-start gap-4">
-              <div class="h-12 w-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 shrink-0 text-xl font-bold">
-                ${item.Nama_Lengkap ? item.Nama_Lengkap.charAt(0) : '?'}
-              </div>
-              <div class="flex-1">
-                <div class="flex justify-between items-start">
-                  <h3 class="font-bold text-slate-800">${item.Nama_Lengkap}</h3>
-                  <span class="text-[10px] font-bold px-2 py-1 rounded-md ${isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">${item.Status_Aktif || '-'}</span>
-                </div>
-                <p class="text-xs text-slate-500 mb-2">${item.Jenis_Kelamin || '-'} • <i class="fa-brands fa-whatsapp text-green-500 mx-1"></i>${item.No_WhatsApp || '-'}</p>
-                <div class="text-xs font-medium bg-slate-50 inline-block px-2 py-1 rounded border border-slate-100">
-                  <i class="fa-regular fa-calendar-check mr-1 text-slate-400"></i> ${item.Kesediaan_Waktu || '-'}
-                </div>
-              </div>
-            </div>`;
-        }
-      });
-    }
-
-    async function actionAPI(action, id, value) {
-      if(action === 'update_task' && !confirm("Yakin tugas ini sudah selesai?")) return;
-      
-      // Optimistic UI Update
-      if(action === 'adjust_stock') {
-        let item = allData.inventaris.find(i => i.ID_Barang === id);
-        if(item) {
-           let dp = (Number(item.Sedang_Dipakai)||0) + value;
-           if(dp < 0) dp = 0;
-           let total = Number(item.Total_Stok)||0;
-           if(dp > total) {
-              alert("Gagal: Barang yang dipakai melebihi Total Stok!");
-              return;
-           }
-           item.Sedang_Dipakai = dp;
-           item.Sisa_Stok = total - dp;
-           renderData();
-        }
-      } else if(action === 'update_task') {
-        let item = allData.jadwal.find(i => i.ID_Tugas === id);
-        if(item) { item.Status_Pekerjaan = value; renderData(); }
-      }
-
-      // API Call Background
-      try {
-        let payload = { action: action, id: id };
-        if(action === 'adjust_stock') payload.change = value;
-        if(action === 'update_task') payload.status = value;
-
-        await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-      } catch(e) {
-        console.error("Gagal sinkronisasi dengan server", e);
-      }
-    }
-  </script>
+  <!-- Panggil File JavaScript Terpisah -->
+  <script src="js/app.js"></script>
 </body>
 </html>
