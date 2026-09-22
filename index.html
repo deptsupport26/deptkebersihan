@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Kebersihan CABR</title>
+  <style>
+    :root {
+      --primary: #0369a1; --primary-light: #e0f2fe; --bg: #f8fafc;
+      --card: #ffffff; --text: #0f172a; --text-muted: #64748b;
+      --border: #e2e8f0; --success: #16a34a; --warning: #ea580c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 70px; }
+    
+    /* Header & Nav */
+    header { background: #fff; padding: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .header-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+    .nav-tabs { display: flex; gap: 8px; margin-top: 12px; }
+    .tab { flex: 1; padding: 8px; text-align: center; background: var(--primary-light); color: var(--primary); border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .tab.active { background: var(--primary); color: #fff; }
+
+    /* Container */
+    .container { padding: 16px; max-width: 800px; margin: 0 auto; }
+    .search-bar { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; outline: none; font-size: 1rem; }
+    .search-bar:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+
+    /* Cards */
+    .card { background: var(--card); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;}
+    .badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: #f1f5f9; font-weight: bold; color: var(--text-muted); }
+    
+    /* Buttons */
+    .btn-group { display: flex; gap: 8px; margin-top: 12px; }
+    .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; font-size:0.9rem; cursor: pointer; transition: 0.2s; }
+    .btn:active { transform: scale(0.98); }
+    .btn-pakai { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+    .btn-kembali { background: #dcfce7; color: var(--success); border: 1px solid #86efac; }
+    .btn-selesai { background: var(--primary); color: #fff; width: 100%; margin-top: 12px; }
+
+    /* Status Colors */
+    .status-Selesai { color: var(--success); background: #dcfce7; border: 1px solid #86efac; }
+    .status-Belum { color: var(--warning); background: #ffedd5; border: 1px solid #fdba74; }
+    
+    /* Loading */
+    #loading { text-align: center; color: var(--text-muted); padding: 40px 20px; font-weight: 500;}
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(3,105,161,0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title">Dep. Kebersihan CABR</div>
+    <div class="nav-tabs">
+      <div class="tab active" onclick="switchTab('inventaris')">🧹 Stok</div>
+      <div class="tab" onclick="switchTab('jadwal')">📋 Tugas</div>
+      <div class="tab" onclick="switchTab('relawan')">👥 Tim</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <input type="text" id="search" class="search-bar" placeholder="Cari barang, area, atau nama..." oninput="renderData()">
+    <div id="loading">
+      <div class="spinner"></div> Menghubungkan ke Database...
+    </div>
+    <div id="content"></div>
+  </div>
+
+  <script>
+    // URL Web App Anda sudah dimasukkan di sini
+    const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
+    
+    let currentTab = 'inventaris';
+    let allData = { inventaris: [], jadwal: [], relawan: [] };
+
+    document.addEventListener('DOMContentLoaded', loadAllData);
+
+    async function loadAllData() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('content').innerHTML = '';
+      
+      try {
+        const [invRes, jadRes, relRes] = await Promise.all([
+          fetch(API_URL + "?type=inventaris"),
+          fetch(API_URL + "?type=jadwal"),
+          fetch(API_URL + "?type=relawan")
+        ]);
+
+        const invJson = await invRes.json();
+        const jadJson = await jadRes.json();
+        const relJson = await relRes.json();
+
+        allData.inventaris = invJson.data || [];
+        allData.jadwal = jadJson.data || [];
+        allData.relawan = relJson.data || [];
+
+        document.getElementById('loading').style.display = 'none';
+        renderData();
+      } catch (err) {
+        document.getElementById('loading').innerHTML = 'Gagal memuat data. <br><button onclick="loadAllData()" style="margin-top:10px; padding:8px 16px; border-radius:6px; border:1px solid #ccc;">Coba Lagi</button>';
+      }
+    }
+
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      document.getElementById('search').value = '';
+      
+      let placeholderTxt = 'Cari...';
+      if(tabName === 'inventaris') placeholderTxt = 'Cari barang, box...';
+      if(tabName === 'jadwal') placeholderTxt = 'Cari area, tugas...';
+      if(tabName === 'relawan') placeholderTxt = 'Cari nama kru...';
+      document.getElementById('search').placeholder = placeholderTxt;
+      
+      renderData();
+    }
+
+    function renderData() {
+      const keyword = document.getElementById('search').value.toLowerCase();
+      const content = document.getElementById('content');
+      content.innerHTML = '';
+      
+      let dataToRender = allData[currentTab];
+
+      if(dataToRender.length === 0) {
+        content.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:var(--text-muted);">Data belum tersedia di Sheet.</div>`;
+        return;
+      }
+
+      dataToRender.forEach(item => {
+        const values = Object.values(item).join(' ').toLowerCase();
+        if(!values.includes(keyword)) return;
+
+        if (currentTab === 'inventaris') {
+          const sisa = Number(item.Sisa_Stok) || 0;
+          const total = Number(item.Total_Stok) || 0;
+          const dipakai = Number(item.Sedang_Dipakai) || 0;
+          
+          content.innerHTML += `
+            <div class="card">
+              <div class="card-header">
+                <span class="badge">${item.Kategori || '-'}</span>
+                <span style="font-size:0.8rem; color:var(--text-muted)">📍 ${item.Lokasi_Simpan || 'Gudang'}</span>
+              </div>
+              <h3 style="margin-bottom: 8px;">${item.Nama_Barang}</h3>
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; border: 1px dashed var(--border);">
+                 <div style="text-align:center;"><div style="font-size:0.7rem; color:var(--text-muted)">Total</div><strong>${total}</strong></div>
+                 <div style="text-align:center;"><div style="font-size:0.7rem; color:var(--warning)">Dipakai</div><strong style="color:var(--warning)">${dipakai}</strong></div>
+                 <div style="text-align:center;"><div style="font-size:0.7rem; color:var(--success)">Tersedia</div><strong style="font-size:1.2rem; color:var(--success)">${sisa}</strong> ${item.Satuan || ''}</div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-pakai" onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)">- Pakai 1</button>
+                <button class="btn btn-kembali" onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)">+ Kembali</button>
+              </div>
+            </div>`;
+        } 
+        
+        else if (currentTab === 'jadwal') {
+          const isDone = item.Status_Pekerjaan === 'Selesai';
+          content.innerHTML += `
+            <div class="card">
+              <div class="card-header">
+                <span class="badge">${item.Fase_Acara}</span>
+                <span class="badge ${isDone ? 'status-Selesai' : 'status-Belum'}">${item.Status_Pekerjaan || 'Belum Mulai'}</span>
+              </div>
+              <h3 style="margin-bottom: 6px;">${item.Area}</h3>
+              <p style="font-size:0.95rem; margin-bottom:10px; color:#334155;"><strong>Tugas:</strong> ${item.Deskripsi_Tugas}</p>
+              <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
+                 <span>⏰ ${item.Shift_Waktu || '-'}</span>
+                 <span>👤 ${item.Relawan_Ditugaskan || '-'}</span>
+              </div>
+              ${!isDone ? `<button class="btn btn-selesai" onclick="actionAPI('update_task', '${item.ID_Tugas}', 'Selesai')">✓ Tandai Selesai</button>` : ''}
+            </div>`;
+        }
+
+        else if (currentTab === 'relawan') {
+          content.innerHTML += `
+            <div class="card">
+              <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                  <h3 style="margin-bottom:4px;">${item.Nama_Lengkap}</h3>
+                  <p style="font-size:0.85rem; color:var(--text-muted);">${item.Jenis_Kelamin || '-'} • 📞 ${item.No_WhatsApp || '-'}</p>
+                </div>
+                <span class="badge ${item.Status_Aktif === 'Aktif' ? 'status-Selesai' : ''}">${item.Status_Aktif || '-'}</span>
+              </div>
+              <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:0.85rem;">
+                <strong>Jadwal Hadir:</strong> ${item.Kesediaan_Waktu || '-'}
+              </div>
+            </div>`;
+        }
+      });
+    }
+
+    // Fungsi Action (POST)
+    async function actionAPI(action, id, value) {
+      // Minta konfirmasi sebelum mengeksekusi
+      if(action === 'update_task' && !confirm("Yakin tugas ini sudah selesai?")) return;
+      
+      // Update UI Sementara biar terasa cepat (Optimistic UI)
+      if(action === 'adjust_stock') {
+        let item = allData.inventaris.find(i => i.ID_Barang === id);
+        if(item) {
+           let dp = (Number(item.Sedang_Dipakai)||0) + value;
+           if(dp < 0) dp = 0;
+           let total = Number(item.Total_Stok)||0;
+           if(dp > total) {
+              alert("Gagal: Barang yang dipakai melebihi Total Stok!");
+              return;
+           }
+           item.Sedang_Dipakai = dp;
+           item.Sisa_Stok = total - dp;
+           renderData();
+        }
+      } else if(action === 'update_task') {
+        let item = allData.jadwal.find(i => i.ID_Tugas === id);
+        if(item) { item.Status_Pekerjaan = value; renderData(); }
+      }
+
+      // Kirim Data ke API secara Background
+      try {
+        let payload = { action: action, id: id };
+        if(action === 'adjust_stock') payload.change = value;
+        if(action === 'update_task') payload.status = value;
+
+        await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      } catch(e) {
+        console.error(e);
+        // Jika gagal murni karena koneksi putus (bukan cors), data akan direfresh ulang
+      }
+    }
+  </script>
+</body>
+</html>
