@@ -1,1 +1,25 @@
-ds
+body {
+  padding-bottom: 80px;
+}
+
+.tab-active {
+  background-color: #0284c7;
+  color: white;
+}
+
+.tab-inactive {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+/* Spinner Loading */
+.loader {
+  border-top-color: #0284c7;
+  -webkit-animation: spinner 1.5s linear infinite;
+  animation: spinner 1.5s linear infinite;
+}
+
+@keyframes spinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
