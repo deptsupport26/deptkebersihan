@@ -7,107 +7,132 @@
   <!-- Tailwind CSS & FontAwesome -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- CSS Kustom -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
-  <!-- Header Sticky -->
+  <!-- Header Sticky (Dioptimalkan untuk HP) -->
   <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 px-4 py-3">
     <div class="flex items-center justify-between mb-3">
-      <h1 class="text-xl font-bold text-sky-700"><i class="fa-solid fa-leaf mr-2"></i>Dep. Kebersihan</h1>
-      <button onclick="openAddModal()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all">
-        <i class="fa-solid fa-plus mr-1"></i> Tambah Barang
+      <h1 class="text-base font-bold text-sky-700 truncate"><i class="fa-solid fa-leaf mr-1"></i>Dep. Kebersihan</h1>
+      <button onclick="openAddModal()" class="bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all shrink-0">
+        <i class="fa-solid fa-plus mr-1"></i> Tambah
       </button>
     </div>
     
-    <!-- Tab Navigasi -->
+    <!-- Tab Navigasi Utama -->
     <div class="flex gap-2">
-      <button id="tab-inventaris" onclick="switchTab('inventaris')" class="tab-btn tab-active flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200">
+      <button id="tab-inventaris" onclick="switchTab('inventaris')" class="tab-btn tab-active flex-1 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200">
         <i class="fa-solid fa-box-open mr-1"></i> Stok
       </button>
-      <button id="tab-jadwal" onclick="switchTab('jadwal')" class="tab-btn tab-inactive flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200">
+      <button id="tab-jadwal" onclick="switchTab('jadwal')" class="tab-btn tab-inactive flex-1 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200">
         <i class="fa-solid fa-clipboard-list mr-1"></i> Tugas
       </button>
-      <button id="tab-relawan" onclick="switchTab('relawan')" class="tab-btn tab-inactive flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200">
+      <button id="tab-relawan" onclick="switchTab('relawan')" class="tab-btn tab-inactive flex-1 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200">
         <i class="fa-solid fa-users mr-1"></i> Tim
       </button>
     </div>
   </header>
 
-  <main class="p-4 max-w-2xl mx-auto">
-    <!-- Kotak Pencarian -->
-    <div class="relative mb-5">
-      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-        <i class="fa-solid fa-magnifying-glass"></i>
+  <main class="p-3 max-w-xl mx-auto">
+    <!-- Kotak Pencarian & Kontrol Tampilan (Grid/List Toggle) -->
+    <div class="flex gap-2 mb-4" id="searchFilterContainer">
+      <div class="relative flex-1">
+        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </div>
+        <input type="text" id="search" oninput="renderData()" class="bg-white border border-slate-200 text-slate-900 text-xs rounded-xl focus:ring-sky-500 focus:border-sky-500 block w-full pl-9 p-2.5 shadow-sm" placeholder="Cari barang, box...">
       </div>
-      <input type="text" id="search" oninput="renderData()" class="bg-white border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-3 shadow-sm" placeholder="Cari barang, box, lokasi...">
+      <!-- Tombol Toggle Grid / List -->
+      <div class="flex bg-slate-200 p-1 rounded-xl shrink-0" id="viewToggleGroup">
+        <button onclick="setViewMode('grid')" id="btnGridView" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-sky-700 shadow-sm transition-all"><i class="fa-solid fa-border-all"></i></button>
+        <button onclick="setViewMode('list')" id="btnListView" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-500 transition-all"><i class="fa-solid fa-list"></i></button>
+      </div>
     </div>
 
     <!-- Status Loading -->
     <div id="loading" class="flex flex-col items-center justify-center py-12">
-      <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-10 w-10 mb-4"></div>
-      <p class="text-slate-500 font-medium text-sm">Menghubungkan ke Database...</p>
+      <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-8 w-8 mb-3"></div>
+      <p class="text-slate-500 font-medium text-xs">Memuat database...</p>
     </div>
 
     <!-- Kontainer Data -->
-    <div id="content" class="space-y-4"></div>
+    <div id="content" class="space-y-3"></div>
   </main>
 
-  <!-- Modal Tambah Barang & Kompres Foto -->
+  <!-- Modal Tambah Barang Baru -->
   <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl w-full max-w-md p-5 shadow-xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-slate-800">Tambah Barang Baru</h3>
-        <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+        <h3 class="text-sm font-bold text-slate-800">Tambah Barang Baru</h3>
+        <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
       </div>
-      
-      <form id="addItemForm" onsubmit="submitNewItem(event)" class="space-y-4">
+      <form id="addItemForm" onsubmit="submitNewItem(event)" class="space-y-3">
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nama Barang</label>
-          <input type="text" id="newName" required class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-sky-500 focus:border-sky-500">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nama Barang</label>
+          <input type="text" id="newName" required class="w-full border border-slate-200 rounded-lg p-2 text-xs">
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Kategori</label>
-            <select id="newCategory" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm bg-white">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kategori</label>
+            <select id="newCategory" class="w-full border border-slate-200 rounded-lg p-2 text-xs bg-white">
               <option value="Alat / Sabun">Alat / Sabun</option>
               <option value="Habis Pakai">Habis Pakai</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Lokasi / Box</label>
-            <input type="text" id="newLocation" placeholder="Contoh: Box 1" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Lokasi / Box</label>
+            <input type="text" id="newLocation" placeholder="Box 1" class="w-full border border-slate-200 rounded-lg p-2 text-xs">
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Total Stok</label>
-            <input type="number" id="newTotal" required value="1" min="1" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Total Stok</label>
+            <input type="number" id="newTotal" required value="1" min="1" class="w-full border border-slate-200 rounded-lg p-2 text-xs">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Satuan</label>
-            <input type="text" id="newUnit" placeholder="pcs / botol / pack" required class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Satuan</label>
+            <input type="text" id="newUnit" placeholder="pcs/botol" required class="w-full border border-slate-200 rounded-lg p-2 text-xs">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Upload Foto (Kamera / Galeri HP)</label>
-          <input type="file" id="newPhoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
-          <p class="text-[10px] text-slate-400 mt-1">Foto akan otomatis dikompres agar ringan saat diunggah.</p>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Foto (Kamera/Galeri)</label>
+          <input type="file" id="newPhoto" accept="image/*" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Keterangan</label>
-          <input type="text" id="newDesc" placeholder="Catatan tambahan..." class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
+          <input type="text" id="newDesc" placeholder="Catatan..." class="w-full border border-slate-200 rounded-lg p-2 text-xs">
         </div>
         <div class="flex gap-2 pt-2">
-          <button type="button" onclick="closeAddModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-lg text-sm">Batal</button>
-          <button type="submit" id="submitBtn" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm">Simpan</button>
+          <button type="button" onclick="closeAddModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2 rounded-lg text-xs">Batal</button>
+          <button type="submit" id="submitBtn" class="flex-1 bg-sky-600 text-white font-bold py-2 rounded-lg text-xs shadow-sm">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Panggil File JavaScript Terpisah -->
+  <!-- Modal Edit / Tambah Gambar Barang yang Sudah Ada -->
+  <div id="editModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-sm font-bold text-slate-800" id="editModalTitle">Edit Foto Barang</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 text-lg">&times;</button>
+      </div>
+      <form onsubmit="submitEditPhoto(event)" class="space-y-3">
+        <input type="hidden" id="editItemId">
+        <div id="currentPhotoPreview" class="text-center mb-2"></div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ganti / Upload Foto Baru</label>
+          <input type="file" id="editPhotoFile" accept="image/*" required class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700">
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeEditModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2 rounded-lg text-xs">Batal</button>
+          <button type="submit" id="editSubmitBtn" class="flex-1 bg-sky-600 text-white font-bold py-2 rounded-lg text-xs shadow-sm">Upload Foto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/app.js"></script>
 </body>
 </html>
