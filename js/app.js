@@ -1,7 +1,8 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
 
 let currentTab = 'inventaris';
-let currentViewMode = 'grid'; // Default Grid/Card view
+let currentViewMode = 'grid'; // 'grid' atau 'list'
+let currentCategory = 'Semua';
 let allData = { inventaris: [], jadwal: [], relawan: [] };
 
 document.addEventListener('DOMContentLoaded', loadAllData);
@@ -47,12 +48,15 @@ function switchTab(tabName) {
   activeBtn.classList.remove('tab-inactive');
   activeBtn.classList.add('tab-active');
 
-  // Sembunyikan toggle view grid/list jika bukan di tab inventaris
+  // Kontrol visibilitas Filter Kategori dan Toggle View (Hanya di tab inventaris)
   const viewToggle = document.getElementById('viewToggleGroup');
+  const catFilter = document.getElementById('categoryFilterContainer');
   if(tabName === 'inventaris') {
     viewToggle.style.display = 'flex';
+    catFilter.style.display = 'flex';
   } else {
     viewToggle.style.display = 'none';
+    catFilter.style.display = 'none';
   }
 
   document.getElementById('search').value = '';
@@ -75,6 +79,24 @@ function setViewMode(mode) {
   renderData();
 }
 
+function setCategory(category, el) {
+  currentCategory = category;
+  document.querySelectorAll('.cat-chip').forEach(chip => {
+    chip.className = "cat-chip px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200";
+  });
+  el.className = "cat-chip cat-active px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-sky-600 text-white shadow-sm";
+  renderData();
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastMsg').innerText = msg;
+  toast.style.transform = 'translateY(0)';
+  setTimeout(() => {
+    toast.style.transform = 'translateY(-150%)';
+  }, 2500);
+}
+
 function renderData() {
   const keyword = document.getElementById('search').value.toLowerCase();
   const content = document.getElementById('content');
@@ -87,16 +109,21 @@ function renderData() {
     return;
   }
 
-  // Jika di tab inventaris dan menggunakan Grid View
+  // Atur kelas kontainer berdasarkan mode tampilan
   if(currentTab === 'inventaris' && currentViewMode === 'grid') {
-    content.className = "grid grid-cols-2 gap-2.5"; // Di HP tampil 2 kolom ringkas tidak terlalu lebar
+    content.className = "grid grid-cols-2 gap-2.5";
   } else {
-    content.className = "space-y-2.5"; // Tampilan list ke bawah
+    content.className = "space-y-2.5";
   }
 
   dataToRender.forEach(item => {
     const values = Object.values(item).join(' ').toLowerCase();
     if(!values.includes(keyword)) return;
+
+    // Filter Kategori khusus tab inventaris
+    if(currentTab === 'inventaris' && currentCategory !== 'Semua') {
+      if(item.Kategori !== currentCategory) return;
+    }
 
     if (currentTab === 'inventaris') {
       const sisa = Number(item.Sisa_Stok) || 0;
@@ -105,16 +132,15 @@ function renderData() {
       const fotoUrl = item.URL_Foto && item.URL_Foto.startsWith('http') ? item.URL_Foto : '';
 
       if(currentViewMode === 'grid') {
-        // --- GRID / CARD VIEW (Kecil & Pas untuk HP) ---
+        // --- GRID / CARD VIEW ---
         content.innerHTML += `
           <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div class="absolute top-0 right-0 w-1.5 h-full ${sisa > 0 ? 'bg-green-400' : 'bg-red-400'}"></div>
             <div>
-              <!-- Thumbnail Foto atau Tombol Tambah Foto -->
               <div class="relative h-24 bg-slate-100 rounded-lg mb-2 overflow-hidden flex items-center justify-center border border-slate-100">
                 ${fotoUrl ? `<img src="${fotoUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-300 text-xl"></i>`}
-                <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}', '${fotoUrl}')" class="absolute bottom-1 right-1 bg-slate-900/70 hover:bg-slate-900 text-white p-1 rounded-md text-[10px]">
-                  <i class="fa-solid fa-camera"></i>
+                <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}', '${fotoUrl}')" class="absolute bottom-1 right-1 bg-slate-900/80 hover:bg-slate-900 text-white px-2 py-1 rounded-md text-[10px] font-bold shadow">
+                  <i class="fa-solid fa-camera mr-1"></i> Foto
                 </button>
               </div>
 
@@ -131,12 +157,12 @@ function renderData() {
             </div>
           </div>`;
       } else {
-        // --- LIST VIEW (Memanjang ke bawah) ---
+        // --- LIST VIEW ---
         content.innerHTML += `
           <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex items-center gap-3">
             <div class="relative h-14 w-14 bg-slate-100 rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-slate-100">
               ${fotoUrl ? `<img src="${fotoUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-300 text-sm"></i>`}
-              <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}', '${fotoUrl}')" class="absolute bottom-0 right-0 bg-slate-900/70 text-white p-0.5 rounded-tl text-[9px]">
+              <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}', '${fotoUrl}')" class="absolute bottom-0 right-0 bg-slate-900/80 text-white px-1.5 py-0.5 rounded-tl text-[9px] font-bold">
                 <i class="fa-solid fa-camera"></i>
               </button>
             </div>
@@ -148,8 +174,8 @@ function renderData() {
               </div>
               <h4 class="font-bold text-slate-800 text-xs truncate">${item.Nama_Barang}</h4>
               <div class="flex gap-2 mt-1.5">
-                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="bg-red-50 text-red-600 px-2 py-0.5 rounded font-bold text-[10px]">- Pakai 1</button>
-                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)" class="bg-green-50 text-green-600 px-2 py-0.5 rounded font-bold text-[10px]">+ Kembali</button>
+                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="bg-red-50 text-red-600 px-2.5 py-0.5 rounded font-bold text-[10px]">- Pakai 1</button>
+                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)" class="bg-green-50 text-green-600 px-2.5 py-0.5 rounded font-bold text-[10px]">+ Kembali</button>
               </div>
             </div>
           </div>`;
@@ -193,7 +219,7 @@ function renderData() {
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 
-// Modal Edit / Tambah Foto Barang yang Sudah Ada
+// Modal Edit / Tambah Foto Barang
 function openEditModal(id, name, currentFoto) {
   document.getElementById('editItemId').value = id;
   document.getElementById('editModalTitle').innerText = `Foto: ${name}`;
@@ -208,7 +234,7 @@ function openEditModal(id, name, currentFoto) {
 }
 function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 
-// Submit Upload Foto untuk Barang yang Sudah Ada
+// Upload Foto Barang Eksisting
 async function submitEditPhoto(event) {
   event.preventDefault();
   const id = document.getElementById('editItemId').value;
@@ -231,7 +257,7 @@ async function submitEditPhoto(event) {
 
     closeEditModal();
     document.getElementById('editPhotoFile').value = '';
-    alert("Foto berhasil diperbarui!");
+    showToast("Foto berhasil diperbarui & disimpan!");
     loadAllData();
   } catch (err) {
     alert("Gagal mengunggah foto.");
@@ -290,7 +316,7 @@ async function submitNewItem(event) {
     });
     closeAddModal();
     document.getElementById('addItemForm').reset();
-    alert("Barang berhasil ditambah!");
+    showToast("Barang baru berhasil disimpan!");
     loadAllData();
   } catch (err) {
     alert("Gagal menyimpan.");
@@ -308,7 +334,7 @@ async function actionAPI(action, id, value) {
     if(item) {
        let dp = (Number(item.Sedang_Dipakai)||0) + value;
        if(dp < 0) dp = 0;
-       if(dp > Number(item.Total_Stok)) { alert("Mebihi total stok!"); return; }
+       if(dp > Number(item.Total_Stok)) { alert("Melebihi total stok!"); return; }
        item.Sedang_Dipakai = dp;
        item.Sisa_Stok = Number(item.Total_Stok) - dp;
        renderData();
@@ -321,7 +347,11 @@ async function actionAPI(action, id, value) {
   try {
     await fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify(payload = { action, id, change: value, status: value })
+      body: JSON.stringify({ action: action, id: id, change: value, status: value })
     });
-  } catch(e) { console.error(e); }
+    showToast("Perubahan stok disimpan ke server!");
+  } catch(e) { 
+    console.error(e); 
+    showToast("Gagal menyimpan ke server!");
+  }
 }
