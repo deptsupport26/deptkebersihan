@@ -4,71 +4,62 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Kebersihan CABR</title>
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root {
-      --primary: #0369a1; --primary-light: #e0f2fe; --bg: #f8fafc;
-      --card: #ffffff; --text: #0f172a; --text-muted: #64748b;
-      --border: #e2e8f0; --success: #16a34a; --warning: #ea580c;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding-bottom: 70px; }
-    
-    /* Header & Nav */
-    header { background: #fff; padding: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
-    .header-title { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
-    .nav-tabs { display: flex; gap: 8px; margin-top: 12px; }
-    .tab { flex: 1; padding: 8px; text-align: center; background: var(--primary-light); color: var(--primary); border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .tab.active { background: var(--primary); color: #fff; }
-
-    /* Container */
-    .container { padding: 16px; max-width: 800px; margin: 0 auto; }
-    .search-bar { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; outline: none; font-size: 1rem; }
-    .search-bar:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
-
-    /* Cards */
-    .card { background: var(--card); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .card-header { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;}
-    .badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: #f1f5f9; font-weight: bold; color: var(--text-muted); }
-    
-    /* Buttons */
-    .btn-group { display: flex; gap: 8px; margin-top: 12px; }
-    .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; font-size:0.9rem; cursor: pointer; transition: 0.2s; }
-    .btn:active { transform: scale(0.98); }
-    .btn-pakai { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
-    .btn-kembali { background: #dcfce7; color: var(--success); border: 1px solid #86efac; }
-    .btn-selesai { background: var(--primary); color: #fff; width: 100%; margin-top: 12px; }
-
-    /* Status Colors */
-    .status-Selesai { color: var(--success); background: #dcfce7; border: 1px solid #86efac; }
-    .status-Belum { color: var(--warning); background: #ffedd5; border: 1px solid #fdba74; }
-    
-    /* Loading */
-    #loading { text-align: center; color: var(--text-muted); padding: 40px 20px; font-weight: 500;}
-    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(3,105,161,0.3); border-radius: 50%; border-top-color: var(--primary); animation: spin 1s ease-in-out infinite; margin-right: 8px; vertical-align: middle; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    body { padding-bottom: 80px; } /* Ruang untuk scroll di HP */
+    .tab-active { background-color: #0284c7; color: white; }
+    .tab-inactive { background-color: #e0f2fe; color: #0284c7; }
+    /* Loading Spinner */
+    .loader { border-top-color: #0284c7; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
-  <header>
-    <div class="header-title">Dep. Kebersihan CABR</div>
-    <div class="nav-tabs">
-      <div class="tab active" onclick="switchTab('inventaris')">🧹 Stok</div>
-      <div class="tab" onclick="switchTab('jadwal')">📋 Tugas</div>
-      <div class="tab" onclick="switchTab('relawan')">👥 Tim</div>
+  <!-- Header Sticky -->
+  <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 px-4 py-3">
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-xl font-bold text-sky-700"><i class="fa-solid fa-leaf mr-2"></i>Dep. Kebersihan</h1>
+      <span class="text-xs bg-sky-100 text-sky-800 px-2 py-1 rounded-full font-semibold">CABR</span>
+    </div>
+    
+    <!-- Tab Navigasi -->
+    <div class="flex gap-2">
+      <button id="tab-inventaris" onclick="switchTab('inventaris')" class="tab-btn tab-active flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200">
+        <i class="fa-solid fa-box-open mr-1"></i> Stok
+      </button>
+      <button id="tab-jadwal" onclick="switchTab('jadwal')" class="tab-btn tab-inactive flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200">
+        <i class="fa-solid fa-clipboard-list mr-1"></i> Tugas
+      </button>
+      <button id="tab-relawan" onclick="switchTab('relawan')" class="tab-btn tab-inactive flex-1 py-2 rounded-lg font-semibold text-sm transition-all duration-200">
+        <i class="fa-solid fa-users mr-1"></i> Tim
+      </button>
     </div>
   </header>
 
-  <div class="container">
-    <input type="text" id="search" class="search-bar" placeholder="Cari barang, area, atau nama..." oninput="renderData()">
-    <div id="loading">
-      <div class="spinner"></div> Menghubungkan ke Database...
+  <main class="p-4 max-w-2xl mx-auto">
+    <!-- Kotak Pencarian -->
+    <div class="relative mb-5">
+      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </div>
+      <input type="text" id="search" oninput="renderData()" class="bg-white border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-3 shadow-sm" placeholder="Cari barang, box...">
     </div>
-    <div id="content"></div>
-  </div>
+
+    <!-- Status Loading -->
+    <div id="loading" class="flex flex-col items-center justify-center py-12">
+      <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-10 w-10 mb-4"></div>
+      <p class="text-slate-500 font-medium text-sm">Menghubungkan ke Database...</p>
+    </div>
+
+    <!-- Kontainer Data -->
+    <div id="content" class="space-y-4"></div>
+  </main>
 
   <script>
-    // URL Web App Anda sudah dimasukkan di sini
+    // URL Web App Anda
     const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
     
     let currentTab = 'inventaris';
@@ -77,7 +68,7 @@
     document.addEventListener('DOMContentLoaded', loadAllData);
 
     async function loadAllData() {
-      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loading').style.display = 'flex';
       document.getElementById('content').innerHTML = '';
       
       try {
@@ -98,18 +89,32 @@
         document.getElementById('loading').style.display = 'none';
         renderData();
       } catch (err) {
-        document.getElementById('loading').innerHTML = 'Gagal memuat data. <br><button onclick="loadAllData()" style="margin-top:10px; padding:8px 16px; border-radius:6px; border:1px solid #ccc;">Coba Lagi</button>';
+        document.getElementById('loading').innerHTML = `
+          <div class="text-center py-8">
+            <i class="fa-solid fa-triangle-exclamation text-3xl text-red-400 mb-3"></i>
+            <p class="text-slate-600 mb-4">Gagal memuat data dari server.</p>
+            <button onclick="loadAllData()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg font-semibold text-sm transition-colors">Coba Lagi</button>
+          </div>
+        `;
       }
     }
 
     function switchTab(tabName) {
       currentTab = tabName;
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-      document.getElementById('search').value = '';
       
+      // Update tampilan tombol tab
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('tab-inactive');
+      });
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      activeBtn.classList.remove('tab-inactive');
+      activeBtn.classList.add('tab-active');
+
+      // Update placeholder pencarian
+      document.getElementById('search').value = '';
       let placeholderTxt = 'Cari...';
-      if(tabName === 'inventaris') placeholderTxt = 'Cari barang, box...';
+      if(tabName === 'inventaris') placeholderTxt = 'Cari barang, lokasi...';
       if(tabName === 'jadwal') placeholderTxt = 'Cari area, tugas...';
       if(tabName === 'relawan') placeholderTxt = 'Cari nama kru...';
       document.getElementById('search').placeholder = placeholderTxt;
@@ -125,7 +130,11 @@
       let dataToRender = allData[currentTab];
 
       if(dataToRender.length === 0) {
-        content.innerHTML = `<div style="text-align:center; padding: 40px 20px; color:var(--text-muted);">Data belum tersedia di Sheet.</div>`;
+        content.innerHTML = `
+          <div class="text-center py-10 bg-white rounded-xl border border-slate-100 shadow-sm">
+            <i class="fa-regular fa-folder-open text-4xl text-slate-300 mb-3"></i>
+            <p class="text-slate-500">Data belum tersedia.</p>
+          </div>`;
         return;
       }
 
@@ -139,20 +148,38 @@
           const dipakai = Number(item.Sedang_Dipakai) || 0;
           
           content.innerHTML += `
-            <div class="card">
-              <div class="card-header">
-                <span class="badge">${item.Kategori || '-'}</span>
-                <span style="font-size:0.8rem; color:var(--text-muted)">📍 ${item.Lokasi_Simpan || 'Gudang'}</span>
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-2 h-full ${sisa > 0 ? 'bg-green-400' : 'bg-red-400'}"></div>
+              
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold px-2 py-1 bg-slate-100 text-slate-500 rounded-md uppercase tracking-wider">${item.Kategori || '-'}</span>
+                <span class="text-xs font-medium text-slate-500"><i class="fa-solid fa-location-dot text-red-400 mr-1"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
               </div>
-              <h3 style="margin-bottom: 8px;">${item.Nama_Barang}</h3>
-              <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; border: 1px dashed var(--border);">
-                 <div style="text-align:center;"><div style="font-size:0.7rem; color:var(--text-muted)">Total</div><strong>${total}</strong></div>
-                 <div style="text-align:center;"><div style="font-size:0.7rem; color:var(--warning)">Dipakai</div><strong style="color:var(--warning)">${dipakai}</strong></div>
-                 <div style="text-align:center;"><div style="font-size:0.7rem; color:var(--success)">Tersedia</div><strong style="font-size:1.2rem; color:var(--success)">${sisa}</strong> ${item.Satuan || ''}</div>
+              
+              <h3 class="text-lg font-bold text-slate-800 mb-4">${item.Nama_Barang}</h3>
+              
+              <div class="grid grid-cols-3 gap-2 bg-slate-50 rounded-lg p-3 border border-slate-100 mb-4">
+                 <div class="text-center">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold">Total</div>
+                    <div class="font-semibold text-slate-700">${total}</div>
+                 </div>
+                 <div class="text-center border-l border-r border-slate-200">
+                    <div class="text-[10px] text-orange-400 uppercase font-bold">Dipakai</div>
+                    <div class="font-bold text-orange-500">${dipakai}</div>
+                 </div>
+                 <div class="text-center">
+                    <div class="text-[10px] text-green-500 uppercase font-bold">Tersedia</div>
+                    <div class="font-black text-green-600 text-lg leading-tight">${sisa} <span class="text-xs font-normal">${item.Satuan || ''}</span></div>
+                 </div>
               </div>
-              <div class="btn-group">
-                <button class="btn btn-pakai" onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)">- Pakai 1</button>
-                <button class="btn btn-kembali" onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)">+ Kembali</button>
+              
+              <div class="flex gap-2">
+                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center">
+                  <i class="fa-solid fa-minus mr-2"></i> Pakai 1
+                </button>
+                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)" class="flex-1 bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center">
+                  <i class="fa-solid fa-plus mr-2"></i> Kembali
+                </button>
               </div>
             </div>`;
         } 
@@ -160,45 +187,53 @@
         else if (currentTab === 'jadwal') {
           const isDone = item.Status_Pekerjaan === 'Selesai';
           content.innerHTML += `
-            <div class="card">
-              <div class="card-header">
-                <span class="badge">${item.Fase_Acara}</span>
-                <span class="badge ${isDone ? 'status-Selesai' : 'status-Belum'}">${item.Status_Pekerjaan || 'Belum Mulai'}</span>
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-xs font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md">${item.Fase_Acara}</span>
+                <span class="text-xs font-bold px-2 py-1 rounded-md ${isDone ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}">
+                  ${item.Status_Pekerjaan || 'Belum Mulai'}
+                </span>
               </div>
-              <h3 style="margin-bottom: 6px;">${item.Area}</h3>
-              <p style="font-size:0.95rem; margin-bottom:10px; color:#334155;"><strong>Tugas:</strong> ${item.Deskripsi_Tugas}</p>
-              <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
-                 <span>⏰ ${item.Shift_Waktu || '-'}</span>
-                 <span>👤 ${item.Relawan_Ditugaskan || '-'}</span>
+              <h3 class="text-lg font-bold text-slate-800 mb-2">${item.Area}</h3>
+              <p class="text-sm text-slate-600 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100"><i class="fa-solid fa-thumbtack text-slate-400 mr-2"></i>${item.Deskripsi_Tugas}</p>
+              
+              <div class="flex justify-between items-center text-xs font-medium text-slate-500 mb-4">
+                 <span><i class="fa-regular fa-clock mr-1 text-sky-500"></i> ${item.Shift_Waktu || '-'}</span>
+                 <span><i class="fa-regular fa-user mr-1 text-sky-500"></i> ${item.Relawan_Ditugaskan || '-'}</span>
               </div>
-              ${!isDone ? `<button class="btn btn-selesai" onclick="actionAPI('update_task', '${item.ID_Tugas}', 'Selesai')">✓ Tandai Selesai</button>` : ''}
+              
+              ${!isDone ? `<button onclick="actionAPI('update_task', '${item.ID_Tugas}', 'Selesai')" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-lg font-bold text-sm transition-colors shadow-sm flex items-center justify-center">
+                <i class="fa-solid fa-check mr-2"></i> Tandai Selesai
+              </button>` : ''}
             </div>`;
         }
 
         else if (currentTab === 'relawan') {
+          const isActive = item.Status_Aktif === 'Aktif';
           content.innerHTML += `
-            <div class="card">
-              <div style="display:flex; justify-content:space-between; align-items:start;">
-                <div>
-                  <h3 style="margin-bottom:4px;">${item.Nama_Lengkap}</h3>
-                  <p style="font-size:0.85rem; color:var(--text-muted);">${item.Jenis_Kelamin || '-'} • 📞 ${item.No_WhatsApp || '-'}</p>
-                </div>
-                <span class="badge ${item.Status_Aktif === 'Aktif' ? 'status-Selesai' : ''}">${item.Status_Aktif || '-'}</span>
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex items-start gap-4">
+              <div class="h-12 w-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 shrink-0 text-xl font-bold">
+                ${item.Nama_Lengkap ? item.Nama_Lengkap.charAt(0) : '?'}
               </div>
-              <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:0.85rem;">
-                <strong>Jadwal Hadir:</strong> ${item.Kesediaan_Waktu || '-'}
+              <div class="flex-1">
+                <div class="flex justify-between items-start">
+                  <h3 class="font-bold text-slate-800">${item.Nama_Lengkap}</h3>
+                  <span class="text-[10px] font-bold px-2 py-1 rounded-md ${isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}">${item.Status_Aktif || '-'}</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-2">${item.Jenis_Kelamin || '-'} • <i class="fa-brands fa-whatsapp text-green-500 mx-1"></i>${item.No_WhatsApp || '-'}</p>
+                <div class="text-xs font-medium bg-slate-50 inline-block px-2 py-1 rounded border border-slate-100">
+                  <i class="fa-regular fa-calendar-check mr-1 text-slate-400"></i> ${item.Kesediaan_Waktu || '-'}
+                </div>
               </div>
             </div>`;
         }
       });
     }
 
-    // Fungsi Action (POST)
     async function actionAPI(action, id, value) {
-      // Minta konfirmasi sebelum mengeksekusi
       if(action === 'update_task' && !confirm("Yakin tugas ini sudah selesai?")) return;
       
-      // Update UI Sementara biar terasa cepat (Optimistic UI)
+      // Optimistic UI Update
       if(action === 'adjust_stock') {
         let item = allData.inventaris.find(i => i.ID_Barang === id);
         if(item) {
@@ -218,7 +253,7 @@
         if(item) { item.Status_Pekerjaan = value; renderData(); }
       }
 
-      // Kirim Data ke API secara Background
+      // API Call Background
       try {
         let payload = { action: action, id: id };
         if(action === 'adjust_stock') payload.change = value;
@@ -229,8 +264,7 @@
           body: JSON.stringify(payload)
         });
       } catch(e) {
-        console.error(e);
-        // Jika gagal murni karena koneksi putus (bukan cors), data akan direfresh ulang
+        console.error("Gagal sinkronisasi dengan server", e);
       }
     }
   </script>
