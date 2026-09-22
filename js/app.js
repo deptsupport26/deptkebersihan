@@ -1,7 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
 
 let currentTab = 'inventaris';
-let currentViewMode = 'grid'; // 'grid' atau 'list'
+let currentViewMode = 'grid';
 let currentCategory = 'Semua';
 let allData = { inventaris: [], jadwal: [], relawan: [] };
 
@@ -48,7 +48,6 @@ function switchTab(tabName) {
   activeBtn.classList.remove('tab-inactive');
   activeBtn.classList.add('tab-active');
 
-  // Kontrol visibilitas Filter Kategori dan Toggle View (Hanya di tab inventaris)
   const viewToggle = document.getElementById('viewToggleGroup');
   const catFilter = document.getElementById('categoryFilterContainer');
   if(tabName === 'inventaris') {
@@ -97,6 +96,15 @@ function showToast(msg) {
   }, 2500);
 }
 
+// Lightbox Zoom Gambar
+function openImageModal(url) {
+  document.getElementById('modalImageSrc').src = url;
+  document.getElementById('imageModal').classList.remove('hidden');
+}
+function closeImageModal() {
+  document.getElementById('imageModal').classList.add('hidden');
+}
+
 function renderData() {
   const keyword = document.getElementById('search').value.toLowerCase();
   const content = document.getElementById('content');
@@ -109,7 +117,6 @@ function renderData() {
     return;
   }
 
-  // Atur kelas kontainer berdasarkan mode tampilan
   if(currentTab === 'inventaris' && currentViewMode === 'grid') {
     content.className = "grid grid-cols-2 gap-2.5";
   } else {
@@ -120,7 +127,6 @@ function renderData() {
     const values = Object.values(item).join(' ').toLowerCase();
     if(!values.includes(keyword)) return;
 
-    // Filter Kategori khusus tab inventaris
     if(currentTab === 'inventaris' && currentCategory !== 'Semua') {
       if(item.Kategori !== currentCategory) return;
     }
@@ -129,26 +135,36 @@ function renderData() {
       const sisa = Number(item.Sisa_Stok) || 0;
       const total = Number(item.Total_Stok) || 0;
       const dipakai = Number(item.Sedang_Dipakai) || 0;
-      const fotoUrl = item.URL_Foto && item.URL_Foto.startsWith('http') ? item.URL_Foto : '';
+      
+      // Ambil hingga 3 foto dari string URL_Foto yang dipisah koma
+      let fotoUrls = [];
+      if(item.URL_Foto) {
+        fotoUrls = item.URL_Foto.split(',').map(u => u.trim()).filter(u => u.startsWith('http'));
+      }
+
+      let fotoHtml = '';
+      if(fotoUrls.length > 0) {
+        fotoHtml = `<div class="flex gap-1 mb-2 overflow-x-auto">`;
+        fotoUrls.forEach(url => {
+          fotoHtml += `<img src="${url}" onclick="openImageModal('${url}')" class="h-16 w-16 object-cover rounded-lg border cursor-pointer hover:opacity-90 shrink-0">`;
+        });
+        fotoHtml += `</div>`;
+      } else {
+        fotoHtml = `<div class="h-20 bg-slate-100 rounded-lg mb-2 flex items-center justify-center border border-slate-100 text-slate-300 text-xs"><i class="fa-solid fa-image mr-1"></i> Tanpa Foto</div>`;
+      }
 
       if(currentViewMode === 'grid') {
-        // --- GRID / CARD VIEW ---
         content.innerHTML += `
           <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div class="absolute top-0 right-0 w-1.5 h-full ${sisa > 0 ? 'bg-green-400' : 'bg-red-400'}"></div>
             <div>
-              <div class="relative h-24 bg-slate-100 rounded-lg mb-2 overflow-hidden flex items-center justify-center border border-slate-100">
-                ${fotoUrl ? `<img src="${fotoUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-300 text-xl"></i>`}
-                <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}', '${fotoUrl}')" class="absolute bottom-1 right-1 bg-slate-900/80 hover:bg-slate-900 text-white px-2 py-1 rounded-md text-[10px] font-bold shadow">
-                  <i class="fa-solid fa-camera mr-1"></i> Foto
-                </button>
-              </div>
-
+              ${fotoHtml}
               <div class="flex justify-between items-center text-[10px] text-slate-400 mb-0.5">
-                <span class="truncate max-w-[70%]" title="${item.Lokasi_Simpan || 'Gudang'}">📍 ${item.Lokasi_Simpan || 'Gudang'}</span>
-                <span class="font-bold text-sky-600">${sisa} ${item.Satuan || ''}</span>
+                <span class="truncate max-w-[70%]">📍 ${item.Lokasi_Simpan || 'Gudang'}</span>
+                <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-sky-600 font-bold hover:underline"><i class="fa-solid fa-camera"></i> Foto</button>
               </div>
               <h4 class="font-bold text-slate-800 text-xs mb-2 line-clamp-1" title="${item.Nama_Barang}">${item.Nama_Barang}</h4>
+              <div class="text-[11px] font-black text-green-600 mb-2">Tersedia: ${sisa} ${item.Satuan || ''}</div>
             </div>
 
             <div class="flex gap-1 pt-1 border-t border-slate-100">
@@ -157,14 +173,10 @@ function renderData() {
             </div>
           </div>`;
       } else {
-        // --- LIST VIEW ---
         content.innerHTML += `
           <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex items-center gap-3">
-            <div class="relative h-14 w-14 bg-slate-100 rounded-lg shrink-0 overflow-hidden flex items-center justify-center border border-slate-100">
-              ${fotoUrl ? `<img src="${fotoUrl}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-300 text-sm"></i>`}
-              <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}', '${fotoUrl}')" class="absolute bottom-0 right-0 bg-slate-900/80 text-white px-1.5 py-0.5 rounded-tl text-[9px] font-bold">
-                <i class="fa-solid fa-camera"></i>
-              </button>
+            <div class="shrink-0 flex gap-1">
+              ${fotoUrls.length > 0 ? `<img src="${fotoUrls[0]}" onclick="openImageModal('${fotoUrls[0]}')" class="h-14 w-14 object-cover rounded-lg border cursor-pointer">` : `<div class="h-14 w-14 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300 text-xs"><i class="fa-solid fa-image"></i></div>`}
             </div>
             
             <div class="flex-1 min-w-0">
@@ -173,15 +185,15 @@ function renderData() {
                 <span class="text-xs font-black text-green-600">Sisa: ${sisa} ${item.Satuan || ''}</span>
               </div>
               <h4 class="font-bold text-slate-800 text-xs truncate">${item.Nama_Barang}</h4>
-              <div class="flex gap-2 mt-1.5">
-                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="bg-red-50 text-red-600 px-2.5 py-0.5 rounded font-bold text-[10px]">- Pakai 1</button>
+              <div class="flex gap-2 mt-1.5 items-center">
+                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="bg-red-50 text-red-600 px-2 py-0.5 rounded font-bold text-[10px]">- Pakai</button>
                 <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)" class="bg-green-50 text-green-600 px-2.5 py-0.5 rounded font-bold text-[10px]">+ Kembali</button>
+                <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-sky-600 text-[10px] font-bold ml-auto"><i class="fa-solid fa-camera"></i> Kelola Foto</button>
               </div>
             </div>
           </div>`;
       }
     } 
-    
     else if (currentTab === 'jadwal') {
       const isDone = item.Status_Pekerjaan === 'Selesai';
       content.innerHTML += `
@@ -199,7 +211,6 @@ function renderData() {
           ${!isDone ? `<button onclick="actionAPI('update_task', '${item.ID_Tugas}', 'Selesai')" class="w-full bg-sky-600 text-white py-1.5 rounded font-bold">✓ Tandai Selesai</button>` : ''}
         </div>`;
     }
-
     else if (currentTab === 'relawan') {
       content.innerHTML += `
         <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex items-center gap-3 text-xs">
@@ -215,57 +226,15 @@ function renderData() {
   });
 }
 
-// Modal Tambah Barang
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 
-// Modal Edit / Tambah Foto Barang
-function openEditModal(id, name, currentFoto) {
+function openEditModal(id, name) {
   document.getElementById('editItemId').value = id;
-  document.getElementById('editModalTitle').innerText = `Foto: ${name}`;
-  const preview = document.getElementById('currentPhotoPreview');
-  
-  if(currentFoto) {
-    preview.innerHTML = `<img src="${currentFoto}" class="h-24 w-auto mx-auto rounded-lg border object-cover">`;
-  } else {
-    preview.innerHTML = `<span class="text-[10px] text-slate-400 italic">Belum ada foto</span>`;
-  }
+  document.getElementById('editModalTitle').innerText = `Kelola Foto: ${name}`;
   document.getElementById('editModal').classList.remove('hidden');
 }
 function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
-
-// Upload Foto Barang Eksisting
-async function submitEditPhoto(event) {
-  event.preventDefault();
-  const id = document.getElementById('editItemId').value;
-  const fileInput = document.getElementById('editPhotoFile');
-  const btn = document.getElementById('editSubmitBtn');
-
-  btn.innerText = "Mengompres & Upload...";
-  btn.disabled = true;
-
-  let fotoBase64 = "";
-  if (fileInput.files && fileInput.files[0]) {
-    fotoBase64 = await compressImage(fileInput.files[0], 800, 0.7);
-  }
-
-  try {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'update_photo', id: id, fotoBase64: fotoBase64 })
-    });
-
-    closeEditModal();
-    document.getElementById('editPhotoFile').value = '';
-    showToast("Foto berhasil diperbarui & disimpan!");
-    loadAllData();
-  } catch (err) {
-    alert("Gagal mengunggah foto.");
-  } finally {
-    btn.innerText = "Upload Foto";
-    btn.disabled = false;
-  }
-}
 
 // Kompres Gambar via Canvas
 function compressImage(file, maxWidth, quality) {
@@ -293,11 +262,67 @@ function compressImage(file, maxWidth, quality) {
   });
 }
 
+// Upload hingga 3 Foto untuk Barang Eksisting
+async function submitEditPhotos(event) {
+  event.preventDefault();
+  const id = document.getElementById('editItemId').value;
+  const btn = document.getElementById('editSubmitBtn');
+  btn.innerText = "Mengompres & Upload...";
+  btn.disabled = true;
+
+  let fotoBase64List = [];
+  const files = [
+    document.getElementById('editPhoto1').files[0],
+    document.getElementById('editPhoto2').files[0],
+    document.getElementById('editPhoto3').files[0]
+  ];
+
+  for (let file of files) {
+    if (file) {
+      let b64 = await compressImage(file, 800, 0.7);
+      fotoBase64List.push(b64);
+    }
+  }
+
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'update_photos', id: id, fotoBase64List: fotoBase64List })
+    });
+
+    closeEditModal();
+    document.getElementById('editPhoto1').value = '';
+    document.getElementById('editPhoto2').value = '';
+    document.getElementById('editPhoto3').value = '';
+    showToast("Foto berhasil diperbarui!");
+    loadAllData();
+  } catch (err) {
+    alert("Gagal mengunggah foto.");
+  } finally {
+    btn.innerText = "Simpan Foto";
+    btn.disabled = false;
+  }
+}
+
 async function submitNewItem(event) {
   event.preventDefault();
   const btn = document.getElementById('submitBtn');
   btn.innerText = "Memproses...";
   btn.disabled = true;
+
+  let fotoBase64List = [];
+  const files = [
+    document.getElementById('newPhoto1').files[0],
+    document.getElementById('newPhoto2').files[0],
+    document.getElementById('newPhoto3').files[0]
+  ];
+
+  for (let file of files) {
+    if (file) {
+      let b64 = await compressImage(file, 800, 0.7);
+      fotoBase64List.push(b64);
+    }
+  }
 
   const newItem = {
     Nama_Barang: document.getElementById('newName').value,
@@ -306,7 +331,7 @@ async function submitNewItem(event) {
     Total_Stok: document.getElementById('newTotal').value,
     Satuan: document.getElementById('newUnit').value,
     Keterangan: document.getElementById('newDesc').value,
-    fotoBase64: document.getElementById('newPhoto').files[0] ? await compressImage(document.getElementById('newPhoto').files[0], 800, 0.7) : ""
+    fotoBase64List: fotoBase64List
   };
 
   try {
@@ -316,7 +341,7 @@ async function submitNewItem(event) {
     });
     closeAddModal();
     document.getElementById('addItemForm').reset();
-    showToast("Barang baru berhasil disimpan!");
+    showToast("Barang baru disimpan!");
     loadAllData();
   } catch (err) {
     alert("Gagal menyimpan.");
@@ -349,9 +374,8 @@ async function actionAPI(action, id, value) {
       method: 'POST',
       body: JSON.stringify({ action: action, id: id, change: value, status: value })
     });
-    showToast("Perubahan stok disimpan ke server!");
+    showToast("Disimpan ke server!");
   } catch(e) { 
-    console.error(e); 
-    showToast("Gagal menyimpan ke server!");
+    showToast("Gagal simpan!");
   }
 }
