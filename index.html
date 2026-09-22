@@ -10,10 +10,18 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
 
-  <!-- Notifikasi Toast (Feedback Simpan Data) -->
+  <!-- Notifikasi Toast -->
   <div id="toast" class="fixed top-4 right-4 z-50 transform translate-y-[-150%] transition-transform duration-300 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-xs font-bold">
     <i class="fa-solid fa-circle-check text-green-400"></i>
     <span id="toastMsg">Berhasil disimpan!</span>
+  </div>
+
+  <!-- Modal Lightbox (Zoom Gambar Besar) -->
+  <div id="imageModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4" onclick="closeImageModal()">
+    <div class="relative max-w-2xl w-full text-center">
+      <button class="absolute -top-10 right-0 text-white text-2xl font-bold px-3 py-1">&times;</button>
+      <img id="modalImageSrc" class="max-h-[85vh] max-w-full mx-auto rounded-lg shadow-2xl object-contain">
+    </div>
   </div>
 
   <!-- Header Sticky -->
@@ -25,7 +33,6 @@
       </button>
     </div>
     
-    <!-- Tab Navigasi Utama -->
     <div class="flex gap-2">
       <button id="tab-inventaris" onclick="switchTab('inventaris')" class="tab-btn tab-active flex-1 py-1.5 rounded-lg font-semibold text-xs transition-all duration-200">
         <i class="fa-solid fa-box-open mr-1"></i> Stok
@@ -40,7 +47,6 @@
   </header>
 
   <main class="p-3 max-w-xl mx-auto">
-    <!-- Kotak Pencarian & Kontrol Tampilan -->
     <div class="flex gap-2 mb-3" id="searchFilterContainer">
       <div class="relative flex-1">
         <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
@@ -48,31 +54,27 @@
         </div>
         <input type="text" id="search" oninput="renderData()" class="bg-white border border-slate-200 text-slate-900 text-xs rounded-xl focus:ring-sky-500 focus:border-sky-500 block w-full pl-9 p-2.5 shadow-sm" placeholder="Cari barang, box...">
       </div>
-      <!-- Tombol Toggle Grid / List -->
       <div class="flex bg-slate-200 p-1 rounded-xl shrink-0" id="viewToggleGroup">
         <button onclick="setViewMode('grid')" id="btnGridView" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-sky-700 shadow-sm transition-all"><i class="fa-solid fa-border-all"></i></button>
         <button onclick="setViewMode('list')" id="btnListView" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-500 transition-all"><i class="fa-solid fa-list"></i></button>
       </div>
     </div>
 
-    <!-- Filter Kategori (Chips) -->
     <div id="categoryFilterContainer" class="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
       <button onclick="setCategory('Semua', this)" class="cat-chip cat-active px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-sky-600 text-white shadow-sm">Semua</button>
       <button onclick="setCategory('Alat / Sabun', this)" class="cat-chip px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200">Alat / Sabun</button>
       <button onclick="setCategory('Habis Pakai', this)" class="cat-chip px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-white text-slate-600 border border-slate-200">Habis Pakai</button>
     </div>
 
-    <!-- Status Loading -->
     <div id="loading" class="flex flex-col items-center justify-center py-12">
       <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-8 w-8 mb-3"></div>
       <p class="text-slate-500 font-medium text-xs">Memuat database...</p>
     </div>
 
-    <!-- Kontainer Data -->
     <div id="content" class="space-y-3"></div>
   </main>
 
-  <!-- Modal Tambah Barang Baru -->
+  <!-- Modal Tambah Barang (Mendukung 3 Foto) -->
   <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-md p-5 shadow-xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
@@ -108,8 +110,10 @@
           </div>
         </div>
         <div>
-          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Foto (Kamera/Galeri)</label>
-          <input type="file" id="newPhoto" accept="image/*" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload Foto (Maksimal 3 Foto)</label>
+          <input type="file" id="newPhoto1" accept="image/*" class="w-full text-[10px] text-slate-500 mb-1 file:py-1 file:px-2 file:rounded file:border-0 file:bg-sky-50 file:text-sky-700">
+          <input type="file" id="newPhoto2" accept="image/*" class="w-full text-[10px] text-slate-500 mb-1 file:py-1 file:px-2 file:rounded file:border-0 file:bg-sky-50 file:text-sky-700">
+          <input type="file" id="newPhoto3" accept="image/*" class="w-full text-[10px] text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:bg-sky-50 file:text-sky-700">
         </div>
         <div>
           <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
@@ -123,23 +127,25 @@
     </div>
   </div>
 
-  <!-- Modal Edit / Tambah Gambar Barang -->
+  <!-- Modal Edit / Tambah 3 Foto Barang -->
   <div id="editModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl">
       <div class="flex justify-between items-center mb-3">
-        <h3 class="text-sm font-bold text-slate-800" id="editModalTitle">Edit Foto Barang</h3>
+        <h3 class="text-sm font-bold text-slate-800" id="editModalTitle">Kelola Foto Barang</h3>
         <button onclick="closeEditModal()" class="text-slate-400 text-lg">&times;</button>
       </div>
-      <form onsubmit="submitEditPhoto(event)" class="space-y-3">
+      <form onsubmit="submitEditPhotos(event)" class="space-y-3">
         <input type="hidden" id="editItemId">
-        <div id="currentPhotoPreview" class="text-center mb-2"></div>
+        <div id="currentPhotosPreview" class="grid grid-cols-3 gap-2 mb-2"></div>
         <div>
-          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload Foto Baru</label>
-          <input type="file" id="editPhotoFile" accept="image/*" required class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload 3 Foto Baru (Opsional)</label>
+          <input type="file" id="editPhoto1" accept="image/*" class="w-full text-[10px] text-slate-500 mb-1 file:py-1 file:px-2 file:rounded file:border-0 file:bg-sky-50 file:text-sky-700">
+          <input type="file" id="editPhoto2" accept="image/*" class="w-full text-[10px] text-slate-500 mb-1 file:py-1 file:px-2 file:rounded file:border-0 file:bg-sky-50 file:text-sky-700">
+          <input type="file" id="editPhoto3" accept="image/*" class="w-full text-[10px] text-slate-500 file:py-1 file:px-2 file:rounded file:border-0 file:bg-sky-50 file:text-sky-700">
         </div>
         <div class="flex gap-2 pt-2">
           <button type="button" onclick="closeEditModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2 rounded-lg text-xs">Batal</button>
-          <button type="submit" id="editSubmitBtn" class="flex-1 bg-sky-600 text-white font-bold py-2 rounded-lg text-xs shadow-sm">Upload Foto</button>
+          <button type="submit" id="editSubmitBtn" class="flex-1 bg-sky-600 text-white font-bold py-2 rounded-lg text-xs shadow-sm">Simpan Foto</button>
         </div>
       </form>
     </div>
