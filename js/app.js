@@ -26,6 +26,8 @@ async function loadAllData() {
     allData.jadwal = jadJson.data || [];
     allData.relawan = relJson.data || [];
 
+    populateRelawanDropdown(); // Isi dropdown peminjam dengan data relawan
+
     document.getElementById('loading').style.display = 'none';
     renderData();
   } catch (err) {
@@ -59,7 +61,7 @@ function switchTab(tabName) {
   }
 
   document.getElementById('search').value = '';
-  document.getElementById('search').placeholder = tabName === 'inventaris' ? 'Cari barang, box...' : 'Cari...';
+  document.getElementById('search').placeholder = tabName === 'inventaris' ? 'Cari barang, peminjam...' : 'Cari...';
   renderData();
 }
 
@@ -96,13 +98,14 @@ function showToast(msg) {
   }, 2500);
 }
 
-// Lightbox Zoom Gambar
-function openImageModal(url) {
-  document.getElementById('modalImageSrc').src = url;
-  document.getElementById('imageModal').classList.remove('hidden');
-}
-function closeImageModal() {
-  document.getElementById('imageModal').classList.add('hidden');
+function populateRelawanDropdown() {
+   const select = document.getElementById('pinjamNamaSelect');
+   select.innerHTML = '<option value="">-- Pilih dari Daftar Tim --</option>';
+   allData.relawan.forEach(r => {
+      if(r.Nama_Lengkap) {
+          select.innerHTML += `<option value="${r.Nama_Lengkap}">${r.Nama_Lengkap}</option>`;
+      }
+   });
 }
 
 function renderData() {
@@ -136,21 +139,13 @@ function renderData() {
       const total = Number(item.Total_Stok) || 0;
       const dipakai = Number(item.Sedang_Dipakai) || 0;
       
-      // Ambil hingga 3 foto dari string URL_Foto yang dipisah koma
-      let fotoUrls = [];
-      if(item.URL_Foto) {
-        fotoUrls = item.URL_Foto.split(',').map(u => u.trim()).filter(u => u.startsWith('http'));
-      }
-
-      let fotoHtml = '';
-      if(fotoUrls.length > 0) {
-        fotoHtml = `<div class="flex gap-1 mb-2 overflow-x-auto">`;
-        fotoUrls.forEach(url => {
-          fotoHtml += `<img src="${url}" onclick="openImageModal('${url}')" class="h-16 w-16 object-cover rounded-lg border cursor-pointer hover:opacity-90 shrink-0">`;
-        });
-        fotoHtml += `</div>`;
-      } else {
-        fotoHtml = `<div class="h-20 bg-slate-100 rounded-lg mb-2 flex items-center justify-center border border-slate-100 text-slate-300 text-xs"><i class="fa-solid fa-image mr-1"></i> Tanpa Foto</div>`;
+      // Kolom I sekarang adalah Dipinjam_Oleh
+      const dipinjamOleh = item.Dipinjam_Oleh || ''; 
+      let infoPeminjam = '';
+      if(dipinjamOleh) {
+          infoPeminjam = `<div class="mt-2 text-[10px] text-orange-600 bg-orange-50 p-1.5 rounded border border-orange-100">
+             <i class="fa-solid fa-hand-holding-hand mr-1"></i> Dibawa: <span class="font-bold">${dipinjamOleh}</span>
+          </div>`;
       }
 
       if(currentViewMode === 'grid') {
@@ -158,37 +153,33 @@ function renderData() {
           <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div class="absolute top-0 right-0 w-1.5 h-full ${sisa > 0 ? 'bg-green-400' : 'bg-red-400'}"></div>
             <div>
-              ${fotoHtml}
-              <div class="flex justify-between items-center text-[10px] text-slate-400 mb-0.5">
-                <span class="truncate max-w-[70%]">📍 ${item.Lokasi_Simpan || 'Gudang'}</span>
-                <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-sky-600 font-bold hover:underline"><i class="fa-solid fa-camera"></i> Foto</button>
+              <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+                <span class="truncate max-w-[60%]">📍 ${item.Lokasi_Simpan || 'Gudang'}</span>
+                <span class="font-bold text-slate-500 bg-slate-100 px-1 rounded">${item.Kategori}</span>
               </div>
-              <h4 class="font-bold text-slate-800 text-xs mb-2 line-clamp-1" title="${item.Nama_Barang}">${item.Nama_Barang}</h4>
-              <div class="text-[11px] font-black text-green-600 mb-2">Tersedia: ${sisa} ${item.Satuan || ''}</div>
+              <h4 class="font-bold text-slate-800 text-xs mb-1 line-clamp-2" title="${item.Nama_Barang}">${item.Nama_Barang}</h4>
+              <div class="text-[11px] font-black text-green-600 mb-1">Tersedia: ${sisa} ${item.Satuan || ''}</div>
+              ${infoPeminjam}
             </div>
 
-            <div class="flex gap-1 pt-1 border-t border-slate-100">
-              <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="flex-1 bg-red-50 text-red-600 py-1 rounded font-bold text-[10px]">- Pakai</button>
-              <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)" class="flex-1 bg-green-50 text-green-600 py-1 rounded font-bold text-[10px]">+ Kembali</button>
+            <div class="flex gap-1 pt-2 mt-2 border-t border-slate-100">
+              <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1)" class="flex-1 bg-red-50 text-red-600 py-1.5 rounded font-bold text-[10px]">- Pakai</button>
+              <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1)" class="flex-1 bg-green-50 text-green-600 py-1.5 rounded font-bold text-[10px]">+ Kembali</button>
             </div>
           </div>`;
       } else {
         content.innerHTML += `
           <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex items-center gap-3">
-            <div class="shrink-0 flex gap-1">
-              ${fotoUrls.length > 0 ? `<img src="${fotoUrls[0]}" onclick="openImageModal('${fotoUrls[0]}')" class="h-14 w-14 object-cover rounded-lg border cursor-pointer">` : `<div class="h-14 w-14 bg-slate-100 rounded-lg flex items-center justify-center text-slate-300 text-xs"><i class="fa-solid fa-image"></i></div>`}
-            </div>
-            
             <div class="flex-1 min-w-0">
-              <div class="flex justify-between items-center">
+              <div class="flex justify-between items-center mb-0.5">
                 <span class="text-[10px] font-bold text-slate-400 uppercase">${item.Lokasi_Simpan || 'Gudang'}</span>
                 <span class="text-xs font-black text-green-600">Sisa: ${sisa} ${item.Satuan || ''}</span>
               </div>
-              <h4 class="font-bold text-slate-800 text-xs truncate">${item.Nama_Barang}</h4>
-              <div class="flex gap-2 mt-1.5 items-center">
-                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', 1)" class="bg-red-50 text-red-600 px-2 py-0.5 rounded font-bold text-[10px]">- Pakai</button>
-                <button onclick="actionAPI('adjust_stock', '${item.ID_Barang}', -1)" class="bg-green-50 text-green-600 px-2.5 py-0.5 rounded font-bold text-[10px]">+ Kembali</button>
-                <button onclick="openEditModal('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-sky-600 text-[10px] font-bold ml-auto"><i class="fa-solid fa-camera"></i> Kelola Foto</button>
+              <h4 class="font-bold text-slate-800 text-sm truncate mb-1">${item.Nama_Barang}</h4>
+              ${infoPeminjam}
+              <div class="flex gap-2 mt-2 items-center">
+                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1)" class="bg-red-50 text-red-600 px-3 py-1 rounded font-bold text-[10px]">- Pakai</button>
+                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1)" class="bg-green-50 text-green-600 px-3 py-1 rounded font-bold text-[10px]">+ Kembali</button>
               </div>
             </div>
           </div>`;
@@ -229,79 +220,82 @@ function renderData() {
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 
-function openEditModal(id, name) {
-  document.getElementById('editItemId').value = id;
-  document.getElementById('editModalTitle').innerText = `Kelola Foto: ${name}`;
-  document.getElementById('editModal').classList.remove('hidden');
-}
-function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
-
-// Kompres Gambar via Canvas
-function compressImage(file, maxWidth, quality) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-    };
-  });
-}
-
-// Upload hingga 3 Foto untuk Barang Eksisting
-async function submitEditPhotos(event) {
-  event.preventDefault();
-  const id = document.getElementById('editItemId').value;
-  const btn = document.getElementById('editSubmitBtn');
-  btn.innerText = "Mengompres & Upload...";
-  btn.disabled = true;
-
-  let fotoBase64List = [];
-  const files = [
-    document.getElementById('editPhoto1').files[0],
-    document.getElementById('editPhoto2').files[0],
-    document.getElementById('editPhoto3').files[0]
-  ];
-
-  for (let file of files) {
-    if (file) {
-      let b64 = await compressImage(file, 800, 0.7);
-      fotoBase64List.push(b64);
+// Modal Peminjaman
+function openPinjamModal(id, namaBarang, aksi) {
+    document.getElementById('pinjamItemId').value = id;
+    document.getElementById('pinjamAksi').value = aksi;
+    const desc = document.getElementById('pinjamDesc');
+    
+    if (aksi === 1) {
+        desc.innerHTML = `Siapa yang memakai/membawa <b>${namaBarang}</b>?`;
+    } else {
+        desc.innerHTML = `Siapa yang mengembalikan <b>${namaBarang}</b>? (Pilih nama yang meminjam agar dihapus dari catatan)`;
     }
-  }
 
-  try {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'update_photos', id: id, fotoBase64List: fotoBase64List })
-    });
+    document.getElementById('pinjamNamaSelect').value = '';
+    document.getElementById('pinjamNamaInput').value = '';
+    document.getElementById('pinjamModal').classList.remove('hidden');
+}
 
-    closeEditModal();
-    document.getElementById('editPhoto1').value = '';
-    document.getElementById('editPhoto2').value = '';
-    document.getElementById('editPhoto3').value = '';
-    showToast("Foto berhasil diperbarui!");
-    loadAllData();
-  } catch (err) {
-    alert("Gagal mengunggah foto.");
-  } finally {
-    btn.innerText = "Simpan Foto";
-    btn.disabled = false;
-  }
+function closePinjamModal() { document.getElementById('pinjamModal').classList.add('hidden'); }
+
+async function submitPinjam(event) {
+    event.preventDefault();
+    const id = document.getElementById('pinjamItemId').value;
+    const aksi = Number(document.getElementById('pinjamAksi').value);
+    
+    let namaPeminjam = document.getElementById('pinjamNamaSelect').value;
+    if (!namaPeminjam) {
+        namaPeminjam = document.getElementById('pinjamNamaInput').value;
+    }
+
+    if (!namaPeminjam) {
+        alert("Nama wajib diisi!");
+        return;
+    }
+
+    const btn = document.getElementById('pinjamSubmitBtn');
+    btn.innerText = "Menyimpan...";
+    btn.disabled = true;
+
+    // Optimistic Update Sementara
+    let item = allData.inventaris.find(i => i.ID_Barang === id);
+    if (item) {
+       let dp = (Number(item.Sedang_Dipakai)||0) + aksi;
+       if (dp < 0) dp = 0;
+       if (dp > Number(item.Total_Stok)) {
+           alert("Melebihi stok yang ada!");
+           btn.innerText = "Simpan"; btn.disabled = false;
+           return;
+       }
+       item.Sedang_Dipakai = dp;
+       item.Sisa_Stok = Number(item.Total_Stok) - dp;
+       
+       // Logika tampil di web sementara (agar terasa instan)
+       let listStr = item.Dipinjam_Oleh || '';
+       if (aksi === 1) {
+           item.Dipinjam_Oleh = listStr ? `${listStr}, ${namaPeminjam}` : namaPeminjam;
+       } else {
+           // Menghapus nama dari string jika dikembalikan (hanya ilustrasi sementara di UI)
+           item.Dipinjam_Oleh = listStr.replace(new RegExp(`\\b${namaPeminjam}\\b.*?(,|$)`), '').trim().replace(/,$/, '');
+       }
+       renderData();
+    }
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'adjust_stock', id: id, change: aksi, nama: namaPeminjam })
+      });
+      closePinjamModal();
+      showToast("Tersimpan ke server!");
+      loadAllData(); // Refresh data asli dari server
+    } catch(e) { 
+      showToast("Gagal menyimpan!");
+    } finally {
+      btn.innerText = "Simpan";
+      btn.disabled = false;
+    }
 }
 
 async function submitNewItem(event) {
@@ -310,28 +304,13 @@ async function submitNewItem(event) {
   btn.innerText = "Memproses...";
   btn.disabled = true;
 
-  let fotoBase64List = [];
-  const files = [
-    document.getElementById('newPhoto1').files[0],
-    document.getElementById('newPhoto2').files[0],
-    document.getElementById('newPhoto3').files[0]
-  ];
-
-  for (let file of files) {
-    if (file) {
-      let b64 = await compressImage(file, 800, 0.7);
-      fotoBase64List.push(b64);
-    }
-  }
-
   const newItem = {
     Nama_Barang: document.getElementById('newName').value,
     Kategori: document.getElementById('newCategory').value,
     Lokasi_Simpan: document.getElementById('newLocation').value,
     Total_Stok: document.getElementById('newTotal').value,
     Satuan: document.getElementById('newUnit').value,
-    Keterangan: document.getElementById('newDesc').value,
-    fotoBase64List: fotoBase64List
+    Keterangan: document.getElementById('newDesc').value
   };
 
   try {
@@ -352,30 +331,20 @@ async function submitNewItem(event) {
 }
 
 async function actionAPI(action, id, value) {
-  if(action === 'update_task' && !confirm("Selesai?")) return;
+  if (action === 'update_task' && !confirm("Selesai?")) return;
   
-  if(action === 'adjust_stock') {
-    let item = allData.inventaris.find(i => i.ID_Barang === id);
-    if(item) {
-       let dp = (Number(item.Sedang_Dipakai)||0) + value;
-       if(dp < 0) dp = 0;
-       if(dp > Number(item.Total_Stok)) { alert("Melebihi total stok!"); return; }
-       item.Sedang_Dipakai = dp;
-       item.Sisa_Stok = Number(item.Total_Stok) - dp;
-       renderData();
-    }
-  } else if(action === 'update_task') {
+  if (action === 'update_task') {
     let item = allData.jadwal.find(i => i.ID_Tugas === id);
     if(item) { item.Status_Pekerjaan = value; renderData(); }
-  }
-
-  try {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: action, id: id, change: value, status: value })
-    });
-    showToast("Disimpan ke server!");
-  } catch(e) { 
-    showToast("Gagal simpan!");
+    
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: action, id: id, status: value })
+      });
+      showToast("Disimpan ke server!");
+    } catch(e) { 
+      showToast("Gagal simpan!");
+    }
   }
 }
