@@ -4,6 +4,34 @@ let currentViewMode = 'grid';
 let currentCategory = 'Semua';
 let inventoryData = [];
 
+// 1. Registrasi PWA (Service Worker)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(()=>console.log("PWA Ready"));
+}
+
+// 2. Pull-To-Refresh Logic
+let pullStartY = 0;
+document.addEventListener('touchstart', e => { 
+  if(window.scrollY === 0) pullStartY = e.touches[0].clientY; 
+}, {passive: true});
+
+document.addEventListener('touchmove', e => {
+  if(window.scrollY === 0 && pullStartY > 0) {
+      let y = e.touches[0].clientY;
+      if(y - pullStartY > 70) document.getElementById('ptr-indicator').classList.remove('-translate-y-full');
+  }
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+  if(window.scrollY === 0 && pullStartY > 0) {
+      let y = e.changedTouches[0].clientY;
+      if(y - pullStartY > 80) loadData(); // Triggers refresh
+      document.getElementById('ptr-indicator').classList.add('-translate-y-full');
+      pullStartY = 0;
+  }
+});
+
+// Fitur UI Standar
 function toggleDarkMode() {
   const html = document.documentElement;
   const icon = document.getElementById('themeIcon');
@@ -43,7 +71,6 @@ async function loadData() {
     const invRes = await fetch(API_URL + "?type=inventaris");
     const invJson = await invRes.json();
     inventoryData = invJson.data || [];
-
     document.getElementById('loading').style.display = 'none';
     renderData();
   } catch (err) {
@@ -60,7 +87,6 @@ function setViewMode(mode) {
   currentViewMode = mode;
   const gridBtn = document.getElementById('btnGridView');
   const listBtn = document.getElementById('btnListView');
-  
   if(mode === 'grid') {
     gridBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all";
     listBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold text-slate-400 hover:text-slate-600 transition-all dark:bg-slate-800";
@@ -91,7 +117,6 @@ function renderData() {
   const keyword = document.getElementById('search').value.toLowerCase();
   const content = document.getElementById('content');
   content.innerHTML = '';
-  
   if(inventoryData.length === 0) return;
   content.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3";
 
@@ -102,26 +127,24 @@ function renderData() {
 
     const sisa = Number(item.Sisa_Stok) || 0;
     const total = Number(item.Total_Stok) || 0;
-    
     const dipinjamOlehRaw = item.Dipinjam_Oleh || ''; 
     let infoPeminjam = '';
+    
     if(dipinjamOlehRaw) {
         let logHTML = '';
         const logs = dipinjamOlehRaw.split(';').map(l => l.trim()).filter(l => l);
         logs.forEach(log => {
-           let iconStatus = log.includes("Kembali") ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
-           let colorStatus = log.includes("Kembali") ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
-           logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0">
-             <div class="mt-0.5">${iconStatus}</div><div>${log}</div>
-           </div>`;
+           let isKembali = log.includes("Kembali");
+           let iconStatus = isKembali ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
+           let colorStatus = isKembali ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
+           logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
         });
         
-        // Menambahkan Tombol Clear History di dalam Log Histori
         infoPeminjam = `
         <div class="mt-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg p-2.5">
            <div class="flex justify-between items-center mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">
                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Log Histori</span>
-               <button onclick="clearHistory('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-[9px] font-bold text-rose-500 hover:text-rose-600 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 px-2 py-1 rounded transition-colors" title="Bersihkan Histori"><i class="fa-solid fa-eraser"></i> Bersihkan</button>
+               <button onclick="clearHistory('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-[9px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-1 rounded"><i class="fa-solid fa-eraser"></i> Bersihkan</button>
            </div>
            ${logHTML}
         </div>`;
@@ -131,60 +154,99 @@ function renderData() {
 
     if(currentViewMode === 'grid') {
       content.innerHTML += `
-        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-col justify-between relative group transition-all dark:bg-[#1e293b]">
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm relative group dark:bg-[#1e293b]">
           <div class="absolute top-0 right-0 w-1.5 h-full ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'} rounded-r-2xl"></div>
           <div>
             <div class="flex justify-between items-center text-[10px] mb-3">
               <span class="text-slate-500 font-bold flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
               <div class="flex items-center gap-2">
                 <span class="font-black text-slate-300 dark:text-slate-600 uppercase tracking-wider">${item.Kategori}</span>
-                <button onclick="openEditItemModal('${item.ID_Barang}')" class="w-6 h-6 flex items-center justify-center bg-amber-50 text-amber-500 dark:bg-amber-500/10 rounded hover:bg-amber-100 transition-colors"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="openEditItemModal('${item.ID_Barang}')" class="w-6 h-6 flex items-center justify-center bg-amber-50 text-amber-500 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
               </div>
             </div>
-            
             <div class="flex gap-3 items-start mb-2">
                <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700">${itemIcon}</div>
                <div>
-                  <h4 class="font-extrabold text-slate-800 text-sm mb-1 leading-tight pr-2 line-clamp-2">${item.Nama_Barang}</h4>
-                  <div class="flex items-baseline gap-1.5">
-                      <span class="text-lg font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
-                      <span class="text-[11px] font-bold text-slate-400">${item.Satuan || ''}</span>
-                      <span class="text-[10px] text-slate-400 ml-1">(dari ${total})</span>
-                  </div>
+                  <h4 class="font-extrabold text-slate-800 text-sm mb-1 pr-2 line-clamp-2">${item.Nama_Barang}</h4>
+                  <div class="flex items-baseline gap-1.5"><span class="text-lg font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span><span class="text-[11px] font-bold text-slate-400">${item.Satuan || ''}</span></div>
                </div>
             </div>
             ${infoPeminjam}
           </div>
           <div class="flex gap-2 pt-3 mt-3 border-t border-slate-50 dark:border-slate-700/50">
-            <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1, '${item.Satuan}')" class="flex-1 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 text-rose-600 py-2 rounded-xl font-bold text-[11px] transition-colors"><i class="fa-solid fa-minus mr-1"></i> Pakai</button>
-            <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1, '${item.Satuan}')" class="flex-1 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 text-emerald-600 py-2 rounded-xl font-bold text-[11px] transition-colors"><i class="fa-solid fa-plus mr-1"></i> Kembali</button>
+            <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1, '${item.Satuan}')" class="flex-1 bg-rose-50 dark:bg-rose-500/10 text-rose-600 py-2 rounded-xl font-bold text-[11px]"><i class="fa-solid fa-minus mr-1"></i> Pakai</button>
+            <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1, '${item.Satuan}')" class="flex-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 py-2 rounded-xl font-bold text-[11px]"><i class="fa-solid fa-plus mr-1"></i> Kembali</button>
           </div>
         </div>`;
     } else {
+      // List View TINDER SWIPE
       content.innerHTML += `
-        <div class="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm flex flex-col gap-2 relative overflow-hidden dark:bg-[#1e293b]">
-          <div class="absolute top-0 left-0 h-full w-1.5 ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'}"></div>
-          <div class="flex items-center gap-3">
-             <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700 ml-1">${itemIcon}</div>
-             <div class="flex-1 min-w-0">
-               <div class="flex justify-between items-center mb-0.5">
-                 <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
-                 <button onclick="openEditItemModal('${item.ID_Barang}')" class="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
-               </div>
-               <h4 class="font-bold text-slate-800 text-sm truncate mb-0.5">${item.Nama_Barang}</h4>
-               <div class="flex items-center gap-3">
-                 <span class="text-sm font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa} <span class="text-[10px] font-bold text-slate-400">${item.Satuan || ''}</span></span>
-               </div>
-             </div>
-             <div class="flex flex-col gap-1.5 shrink-0 border-l border-slate-100 dark:border-slate-700 pl-3">
-               <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1, '${item.Satuan}')" class="w-20 bg-rose-50 hover:bg-rose-100 text-rose-600 py-1.5 rounded-lg font-bold text-[10px] transition-colors"><i class="fa-solid fa-minus"></i> Pakai</button>
-               <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1, '${item.Satuan}')" class="w-20 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 py-1.5 rounded-lg font-bold text-[10px] transition-colors"><i class="fa-solid fa-plus"></i> Kembali</button>
-             </div>
-          </div>
-          ${infoPeminjam ? `<div class="ml-16 mr-2 border-t border-slate-100 dark:border-slate-700 pt-2">${infoPeminjam}</div>` : ''}
+        <div class="relative w-full rounded-2xl mb-1 overflow-hidden bg-slate-100 dark:bg-slate-800">
+           <div class="absolute inset-y-0 left-0 w-1/2 flex items-center pl-5 text-emerald-600 font-black"><i class="fa-solid fa-plus mr-2"></i> KEMBALI</div>
+           <div class="absolute inset-y-0 right-0 w-1/2 flex justify-end items-center pr-5 text-rose-600 font-black">PAKAI <i class="fa-solid fa-minus ml-2"></i></div>
+           
+           <div class="swipe-card relative z-10 w-full bg-white dark:bg-[#1e293b] p-3 shadow-sm flex flex-col gap-2 rounded-2xl border border-slate-100 dark:border-slate-700 transition-transform duration-300" data-id="${item.ID_Barang}" data-name="${item.Nama_Barang}" data-unit="${item.Satuan}">
+              <div class="absolute top-0 left-0 h-full w-1.5 ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'} rounded-l-2xl"></div>
+              <div class="flex items-center gap-3">
+                 <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 ml-1">${itemIcon}</div>
+                 <div class="flex-1 min-w-0">
+                   <div class="flex justify-between items-center mb-0.5">
+                     <span class="text-[10px] font-bold text-slate-500"><i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
+                     <button onclick="openEditItemModal('${item.ID_Barang}')" class="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
+                   </div>
+                   <h4 class="font-bold text-slate-800 text-sm truncate mb-0.5">${item.Nama_Barang}</h4>
+                   <div class="text-sm font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa} <span class="text-[10px] font-bold text-slate-400">${item.Satuan || ''}</span></div>
+                 </div>
+              </div>
+              ${infoPeminjam ? `<div class="ml-16 mr-2 border-t border-slate-50 dark:border-slate-700 pt-2">${infoPeminjam}</div>` : ''}
+           </div>
         </div>`;
     }
   });
+
+  if(currentViewMode === 'list') initSwipeCards();
+}
+
+// 3. FUNGSI TINDER SWIPE (GESER)
+function initSwipeCards() {
+    document.querySelectorAll('.swipe-card').forEach(card => {
+        let startX = 0;
+        let isSwiping = false;
+
+        card.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isSwiping = true;
+            card.style.transition = 'none'; 
+        }, {passive: true});
+
+        card.addEventListener('touchmove', (e) => {
+            if(!isSwiping) return;
+            let diffX = e.touches[0].clientX - startX;
+            if(Math.abs(diffX) > 15) card.style.transform = `translateX(${diffX}px)`;
+        }, {passive: true});
+
+        card.addEventListener('touchend', (e) => {
+            isSwiping = false;
+            card.style.transition = 'transform 0.3s ease-out';
+            let diffX = e.changedTouches[0].clientX - startX;
+
+            if (diffX > 90) { // Geser Kanan (Kembali)
+                card.style.transform = `translateX(120px)`;
+                setTimeout(() => { 
+                    card.style.transform = `translateX(0)`; 
+                    openPinjamModal(card.dataset.id, card.dataset.name, -1, card.dataset.unit);
+                }, 200);
+            } else if (diffX < -90) { // Geser Kiri (Pakai)
+                card.style.transform = `translateX(-120px)`;
+                setTimeout(() => { 
+                    card.style.transform = `translateX(0)`; 
+                    openPinjamModal(card.dataset.id, card.dataset.name, 1, card.dataset.unit);
+                }, 200);
+            } else { // Batal Geser
+                card.style.transform = `translateX(0)`;
+            }
+        });
+    });
 }
 
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
@@ -219,7 +281,6 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
     }
     document.getElementById('pinjamModal').classList.remove('hidden');
 }
-
 function closePinjamModal() { document.getElementById('pinjamModal').classList.add('hidden'); }
 
 async function submitPinjam(event) {
@@ -227,12 +288,10 @@ async function submitPinjam(event) {
     const id = document.getElementById('pinjamItemId').value;
     const baseAksi = Number(document.getElementById('pinjamAksi').value); 
     const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
-    
     if (isNaN(qtyInput) || qtyInput <= 0) { alert("Jumlah barang tidak valid!"); return; }
 
     const finalChangeAmount = baseAksi * qtyInput; 
     let namaPeminjam = document.getElementById('pinjamNamaInput').value;
-
     if (!namaPeminjam) { alert("Nama wajib diisi!"); return; }
 
     const btn = document.getElementById('pinjamSubmitBtn');
@@ -240,40 +299,23 @@ async function submitPinjam(event) {
     btn.disabled = true;
 
     try {
-      await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'adjust_stock', id: id, change: finalChangeAmount, nama: namaPeminjam })
-      });
+      await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'adjust_stock', id: id, change: finalChangeAmount, nama: namaPeminjam }) });
       closePinjamModal();
       showToast("Tercatat ke Log Peminjaman!");
       loadData(); 
-    } catch(e) { 
-      showToast("Gagal menyimpan.");
-      btn.disabled = false;
-    }
+    } catch(e) { showToast("Gagal menyimpan."); btn.disabled = false; }
 }
 
-// FUNGSI BARU: Membersihkan Histori (Kolom I)
 async function clearHistory(id, namaBarang) {
     if(!confirm(`Yakin ingin menghapus seluruh histori peminjaman untuk ${namaBarang}?`)) return;
-    
-    // Perbarui UI secara instan agar langsung terasa
     let item = inventoryData.find(i => i.ID_Barang === id);
-    if (item) {
-       item.Dipinjam_Oleh = '';
-       renderData();
-    }
+    if (item) { item.Dipinjam_Oleh = ''; renderData(); }
 
     try {
-      await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'clear_history', id: id })
-      });
+      await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'clear_history', id: id }) });
       showToast("Histori berhasil dibersihkan!");
-      loadData(); // Tarik data asli terbaru dari master
-    } catch(e) { 
-      showToast("Gagal membersihkan histori.");
-    }
+      loadData();
+    } catch(e) { showToast("Gagal membersihkan histori."); }
 }
 
 async function submitNewItem(event) {
@@ -283,33 +325,23 @@ async function submitNewItem(event) {
   btn.disabled = true;
 
   const newItem = {
-    Nama_Barang: document.getElementById('newName').value,
-    Kategori: document.getElementById('newCategory').value,
-    Lokasi_Simpan: document.getElementById('newLocation').value,
-    Total_Stok: document.getElementById('newTotal').value,
-    Satuan: document.getElementById('newUnit').value,
-    Keterangan: document.getElementById('newDesc').value
+    Nama_Barang: document.getElementById('newName').value, Kategori: document.getElementById('newCategory').value,
+    Lokasi_Simpan: document.getElementById('newLocation').value, Total_Stok: document.getElementById('newTotal').value,
+    Satuan: document.getElementById('newUnit').value, Keterangan: document.getElementById('newDesc').value
   };
 
   try {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'create_item', item: newItem })
-    });
+    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'create_item', item: newItem }) });
     closeAddModal();
     document.getElementById('addItemForm').reset();
     showToast("Barang berhasil ditambah!");
     loadData();
-  } catch (err) {
-    alert("Gagal menyimpan.");
-    btn.disabled = false;
-  }
+  } catch (err) { alert("Gagal menyimpan."); btn.disabled = false; }
 }
 
 function openEditItemModal(id) {
   const item = inventoryData.find(i => i.ID_Barang === id);
   if(!item) return;
-
   document.getElementById('editId').value = item.ID_Barang;
   document.getElementById('editName').value = item.Nama_Barang;
   document.getElementById('editCategory').value = item.Kategori;
@@ -317,7 +349,6 @@ function openEditItemModal(id) {
   document.getElementById('editTotal').value = item.Total_Stok;
   document.getElementById('editUnit').value = item.Satuan;
   document.getElementById('editDesc').value = item.Keterangan || '';
-  
   document.getElementById('editItemModal').classList.remove('hidden');
 }
 function closeEditItemModal() { document.getElementById('editItemModal').classList.add('hidden'); }
@@ -329,25 +360,16 @@ async function submitEditItem(event) {
   btn.disabled = true;
 
   const editedItem = {
-    Nama_Barang: document.getElementById('editName').value,
-    Kategori: document.getElementById('editCategory').value,
-    Lokasi_Simpan: document.getElementById('editLocation').value,
-    Total_Stok: document.getElementById('editTotal').value,
-    Satuan: document.getElementById('editUnit').value,
-    Keterangan: document.getElementById('editDesc').value
+    Nama_Barang: document.getElementById('editName').value, Kategori: document.getElementById('editCategory').value,
+    Lokasi_Simpan: document.getElementById('editLocation').value, Total_Stok: document.getElementById('editTotal').value,
+    Satuan: document.getElementById('editUnit').value, Keterangan: document.getElementById('editDesc').value
   };
   const id = document.getElementById('editId').value;
 
   try {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'edit_item', id: id, item: editedItem })
-    });
+    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'edit_item', id: id, item: editedItem }) });
     closeEditItemModal();
     showToast("Perubahan barang disimpan!");
     loadData();
-  } catch (err) {
-    alert("Gagal mengedit barang.");
-    btn.disabled = false;
-  }
+  } catch (err) { alert("Gagal mengedit barang."); btn.disabled = false; }
 }
