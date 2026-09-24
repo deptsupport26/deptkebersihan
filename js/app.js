@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
+const API_URL = "GANTI_DENGAN_URL_WEB_APP_ANDA_YANG_BARU";
 
 let currentViewMode = 'grid';
 let currentCategory = 'Semua';
@@ -40,17 +40,11 @@ async function loadData() {
   document.getElementById('content').innerHTML = '';
   
   try {
-    // HANYA tarik data Inventaris (Tanpa Data Relawan agar tidak error & loading lebih cepat)
     const invRes = await fetch(API_URL + "?type=inventaris");
     const invJson = await invRes.json();
     inventoryData = invJson.data || [];
 
     document.getElementById('loading').style.display = 'none';
-    
-    // Hapus dropdown nama peminjam karena kita pakai input manual yang lebih cepat
-    const selectPeminjam = document.getElementById('pinjamNamaSelect');
-    if(selectPeminjam) selectPeminjam.style.display = 'none';
-
     renderData();
   } catch (err) {
     document.getElementById('loading').innerHTML = `
@@ -121,9 +115,14 @@ function renderData() {
              <div class="mt-0.5">${iconStatus}</div><div>${log}</div>
            </div>`;
         });
+        
+        // Menambahkan Tombol Clear History di dalam Log Histori
         infoPeminjam = `
         <div class="mt-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg p-2.5">
-           <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">Log Histori</div>
+           <div class="flex justify-between items-center mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">
+               <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Log Histori</span>
+               <button onclick="clearHistory('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-[9px] font-bold text-rose-500 hover:text-rose-600 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 px-2 py-1 rounded transition-colors" title="Bersihkan Histori"><i class="fa-solid fa-eraser"></i> Bersihkan</button>
+           </div>
            ${logHTML}
         </div>`;
     }
@@ -218,7 +217,6 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
         btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 dark:shadow-none";
         btn.innerText = "Konfirmasi Kembali";
     }
-
     document.getElementById('pinjamModal').classList.remove('hidden');
 }
 
@@ -230,7 +228,7 @@ async function submitPinjam(event) {
     const baseAksi = Number(document.getElementById('pinjamAksi').value); 
     const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
     
-    if (isNaN(qtyInput) || qtyInput < 0) { alert("Jumlah barang tidak valid!"); return; }
+    if (isNaN(qtyInput) || qtyInput <= 0) { alert("Jumlah barang tidak valid!"); return; }
 
     const finalChangeAmount = baseAksi * qtyInput; 
     let namaPeminjam = document.getElementById('pinjamNamaInput').value;
@@ -252,6 +250,29 @@ async function submitPinjam(event) {
     } catch(e) { 
       showToast("Gagal menyimpan.");
       btn.disabled = false;
+    }
+}
+
+// FUNGSI BARU: Membersihkan Histori (Kolom I)
+async function clearHistory(id, namaBarang) {
+    if(!confirm(`Yakin ingin menghapus seluruh histori peminjaman untuk ${namaBarang}?`)) return;
+    
+    // Perbarui UI secara instan agar langsung terasa
+    let item = inventoryData.find(i => i.ID_Barang === id);
+    if (item) {
+       item.Dipinjam_Oleh = '';
+       renderData();
+    }
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'clear_history', id: id })
+      });
+      showToast("Histori berhasil dibersihkan!");
+      loadData(); // Tarik data asli terbaru dari master
+    } catch(e) { 
+      showToast("Gagal membersihkan histori.");
     }
 }
 
