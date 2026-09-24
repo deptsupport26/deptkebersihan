@@ -1,4 +1,4 @@
-const API_URL = "GANTI_DENGAN_URL_WEB_APP_ANDA_YANG_BARU";
+const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
 
 let currentViewMode = 'grid';
 let currentCategory = 'Semua';
