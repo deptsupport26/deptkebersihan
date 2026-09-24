@@ -1,10 +1,8 @@
-// URL sudah diperbarui dengan link yang benar!
 const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
 
 let currentViewMode = 'grid';
 let currentCategory = 'Semua';
 let inventoryData = [];
-let relawanData = [];
 
 function toggleDarkMode() {
   const html = document.documentElement;
@@ -42,17 +40,17 @@ async function loadData() {
   document.getElementById('content').innerHTML = '';
   
   try {
-    const [invRes, relRes] = await Promise.all([
-      fetch(API_URL + "?type=inventaris"),
-      fetch(API_URL + "?type=relawan")
-    ]);
+    // HANYA tarik data Inventaris (Tanpa Data Relawan agar tidak error & loading lebih cepat)
+    const invRes = await fetch(API_URL + "?type=inventaris");
     const invJson = await invRes.json();
-    const relJson = await relRes.json();
     inventoryData = invJson.data || [];
-    relawanData = relJson.data || [];
 
-    populateRelawanDropdown(); 
     document.getElementById('loading').style.display = 'none';
+    
+    // Hapus dropdown nama peminjam karena kita pakai input manual yang lebih cepat
+    const selectPeminjam = document.getElementById('pinjamNamaSelect');
+    if(selectPeminjam) selectPeminjam.style.display = 'none';
+
     renderData();
   } catch (err) {
     document.getElementById('loading').innerHTML = `
@@ -93,14 +91,6 @@ function showToast(msg) {
   document.getElementById('toastMsg').innerText = msg;
   toast.style.transform = 'translateY(0)';
   setTimeout(() => { toast.style.transform = 'translateY(-150%)'; }, 3000);
-}
-
-function populateRelawanDropdown() {
-   const select = document.getElementById('pinjamNamaSelect');
-   select.innerHTML = '<option value="">-- Pilih Nama --</option>';
-   relawanData.forEach(r => {
-      if(r.Nama_Lengkap) { select.innerHTML += `<option value="${r.Nama_Lengkap}">${r.Nama_Lengkap}</option>`; }
-   });
 }
 
 function renderData() {
@@ -201,12 +191,12 @@ function renderData() {
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 
-// --- MODAL PINJAM ---
 function openPinjamModal(id, namaBarang, aksi, satuan) {
     document.getElementById('pinjamItemId').value = id;
     document.getElementById('pinjamAksi').value = aksi; 
     document.getElementById('pinjamSatuan').innerText = satuan || 'pcs';
     document.getElementById('pinjamQty').value = ''; 
+    document.getElementById('pinjamNamaInput').value = '';
     
     const title = document.getElementById('pinjamTitle');
     const icon = document.getElementById('pinjamIcon');
@@ -229,8 +219,6 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
         btn.innerText = "Konfirmasi Kembali";
     }
 
-    document.getElementById('pinjamNamaSelect').value = '';
-    document.getElementById('pinjamNamaInput').value = '';
     document.getElementById('pinjamModal').classList.remove('hidden');
 }
 
@@ -245,7 +233,7 @@ async function submitPinjam(event) {
     if (isNaN(qtyInput) || qtyInput < 0) { alert("Jumlah barang tidak valid!"); return; }
 
     const finalChangeAmount = baseAksi * qtyInput; 
-    let namaPeminjam = document.getElementById('pinjamNamaSelect').value || document.getElementById('pinjamNamaInput').value;
+    let namaPeminjam = document.getElementById('pinjamNamaInput').value;
 
     if (!namaPeminjam) { alert("Nama wajib diisi!"); return; }
 
@@ -263,12 +251,10 @@ async function submitPinjam(event) {
       loadData(); 
     } catch(e) { 
       showToast("Gagal menyimpan.");
-    } finally {
       btn.disabled = false;
     }
 }
 
-// --- MODAL TAMBAH BARANG ---
 async function submitNewItem(event) {
   event.preventDefault();
   const btn = document.getElementById('submitBtn');
@@ -295,13 +281,10 @@ async function submitNewItem(event) {
     loadData();
   } catch (err) {
     alert("Gagal menyimpan.");
-  } finally {
-    btn.innerText = "Simpan ke Master Data";
     btn.disabled = false;
   }
 }
 
-// --- MODAL EDIT BARANG ---
 function openEditItemModal(id) {
   const item = inventoryData.find(i => i.ID_Barang === id);
   if(!item) return;
@@ -344,8 +327,6 @@ async function submitEditItem(event) {
     loadData();
   } catch (err) {
     alert("Gagal mengedit barang.");
-  } finally {
-    btn.innerText = "Update Data";
     btn.disabled = false;
   }
 }
