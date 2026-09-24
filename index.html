@@ -2,10 +2,15 @@
 <html lang="id" class="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Departemen Kebersihan</title>
   
-  <!-- Ikon Web / Favicon -->
+  <!-- Fitur PWA (Install to Home Screen) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍃</text></svg>">
   
   <script src="https://cdn.tailwindcss.com"></script>
@@ -15,7 +20,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { transition: background-color 0.3s ease, color 0.3s ease; }
+    body { transition: background-color 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
     .dark body { background-color: #0f172a; color: #f8fafc; }
     .dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
     .dark .text-slate-800 { color: #f8fafc !important; }
@@ -24,9 +29,20 @@
     .dark .border-slate-100, .dark .border-slate-200 { border-color: #334155 !important; }
     .dark #pinjamModal .bg-slate-50, .dark #addModal .bg-slate-50, .dark #editItemModal .bg-slate-50 { background-color: #334155 !important; }
     .dark input, .dark select { background-color: #0f172a !important; color: #f8fafc !important; }
+    
+    /* Anti scroll x untuk swipe card */
+    body { overflow-x: hidden; }
+    .swipe-card { touch-action: pan-y; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-emerald-200">
+
+  <!-- Pull-To-Refresh Indicator -->
+  <div id="ptr-indicator" class="fixed top-0 left-0 w-full h-16 flex items-center justify-center -translate-y-full transition-transform duration-300 z-50 bg-slate-50 dark:bg-[#0f172a] shadow-sm">
+    <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+      <i class="fa-solid fa-arrow-rotate-right animate-spin text-xl"></i> Memuat Ulang...
+    </div>
+  </div>
 
   <div id="toast" class="fixed top-4 right-4 z-50 transform translate-y-[-150%] transition-transform duration-300 bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-bold border border-slate-700">
     <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
@@ -46,19 +62,20 @@
         <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-yellow-400 hover:bg-slate-200 transition-all shrink-0">
           <i id="themeIcon" class="fa-solid fa-moon"></i>
         </button>
-        <button onclick="openAddModal()" class="w-10 h-10 lg:w-auto lg:px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-200 transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-plus"></i> <span class="hidden lg:inline">Tambah</span>
+        <!-- Tombol Tambah hanya tampil di Desktop, di HP pakai FAB bawah -->
+        <button onclick="openAddModal()" class="hidden md:flex w-auto px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-200 transition-all active:scale-95 items-center justify-center gap-1.5 h-10">
+          <i class="fa-solid fa-plus"></i> <span>Tambah</span>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="p-4 max-w-2xl mx-auto pb-20">
+  <main class="p-4 max-w-2xl mx-auto pb-24">
     <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 mb-5 transition-colors">
       <div class="flex gap-2 mb-3">
         <div class="relative flex-1 group">
           <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors"><i class="fa-solid fa-magnifying-glass text-sm"></i></div>
-          <input type="text" id="search" oninput="renderData()" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 block w-full pl-10 p-3 outline-none" placeholder="Cari nama barang, box, lokasi, peminjam...">
+          <input type="text" id="search" oninput="renderData()" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 block w-full pl-10 p-3 outline-none" placeholder="Cari barang, box...">
         </div>
         <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl shrink-0 gap-1 items-center transition-colors">
           <button onclick="setViewMode('grid')" id="btnGridView" class="w-10 h-10 rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm"><i class="fa-solid fa-border-all"></i></button>
@@ -74,12 +91,18 @@
 
     <div id="loading" class="flex flex-col items-center justify-center py-16">
       <div class="w-12 h-12 border-4 border-slate-100 dark:border-slate-700 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
-      <p class="text-slate-500 font-medium text-sm animate-pulse">Menghubungkan ke Master Data...</p>
+      <p class="text-slate-500 font-medium text-sm animate-pulse">Menyinkronkan...</p>
     </div>
 
     <div id="content" class="space-y-4"></div>
   </main>
 
+  <!-- FAB: Floating Action Button untuk Mobile -->
+  <button onclick="openAddModal()" class="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-[0_8px_30px_rgb(16,185,129,0.5)] flex items-center justify-center text-xl transition-transform active:scale-90">
+    <i class="fa-solid fa-plus"></i>
+  </button>
+
+  <!-- Modals (Kode Modals tetap sama) -->
   <!-- Modal Peminjaman -->
   <div id="pinjamModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl transform transition-all dark:bg-[#1e293b]">
@@ -91,23 +114,19 @@
         <button onclick="closePinjamModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form onsubmit="submitPinjam(event)">
-        <input type="hidden" id="pinjamItemId">
-        <input type="hidden" id="pinjamAksi"> 
+        <input type="hidden" id="pinjamItemId"><input type="hidden" id="pinjamAksi"> 
         <p class="text-sm text-slate-600 mb-5 leading-relaxed" id="pinjamDesc"></p>
         <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4 mb-5 transition-colors">
            <div>
               <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jumlah Barang</label>
               <div class="flex items-center gap-3">
-                 <input type="number" id="pinjamQty" value="1" step="0.01" min="0" required class="w-24 text-center bg-white border border-slate-200 rounded-xl p-2 text-base font-extrabold text-emerald-600 focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-colors">
+                 <input type="number" id="pinjamQty" value="1" step="0.01" min="0" required class="w-24 text-center bg-white border border-slate-200 rounded-xl p-2 text-base font-extrabold text-emerald-600 focus:ring-2 focus:border-emerald-500 outline-none">
                  <span id="pinjamSatuan" class="text-sm font-semibold text-slate-400">pcs</span>
               </div>
            </div>
            <div>
               <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" id="labelNamaPeminjam">Nama Kru</label>
-              <select id="pinjamNamaSelect" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none mb-2 transition-colors">
-                 <option value="">-- Pilih Nama --</option>
-              </select>
-              <input type="text" id="pinjamNamaInput" placeholder="Atau ketik manual..." class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-colors">
+              <input type="text" id="pinjamNamaInput" placeholder="Ketik nama manual..." class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none" required>
            </div>
         </div>
         <button type="submit" id="pinjamSubmitBtn" class="w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Konfirmasi</button>
@@ -125,41 +144,18 @@
         </div>
         <button onclick="closeAddModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <form id="addItemForm" onsubmit="submitNewItem(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nama Barang</label>
-          <input type="text" id="newName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
+      <form onsubmit="submitNewItem(event)" class="space-y-4">
+        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nama Barang</label><input type="text" id="newName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label><select id="newCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"><option value="Alat / Sabun">Alat / Sabun</option><option value="Habis Pakai">Habis Pakai</option></select></div>
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Lokasi / Box</label><input type="text" id="newLocation" placeholder="Contoh: Box 1 (Solo)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label>
-            <select id="newCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
-              <option value="Alat / Sabun">Alat / Sabun</option>
-              <option value="Habis Pakai">Habis Pakai</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Lokasi / Box</label>
-            <input type="text" id="newLocation" placeholder="Contoh: Box 1 (Solo)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
-          </div>
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Total Stok</label><input type="number" id="newTotal" required step="0.01" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"></div>
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label><input type="text" id="newUnit" placeholder="pcs/botol" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"></div>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Total Stok</label>
-            <input type="number" id="newTotal" required step="0.01" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label>
-            <input type="text" id="newUnit" placeholder="pcs/botol" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
-          <input type="text" id="newDesc" placeholder="Opsional..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
-        </div>
-        <div class="pt-2">
-          <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-emerald-200 active:scale-95">Simpan ke Master Data</button>
-        </div>
+        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label><input type="text" id="newDesc" placeholder="Opsional..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"></div>
+        <div class="pt-2"><button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-emerald-200 active:scale-95">Simpan ke Master Data</button></div>
       </form>
     </div>
   </div>
@@ -174,42 +170,19 @@
         </div>
         <button onclick="closeEditItemModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <form id="editItemForm" onsubmit="submitEditItem(event)" class="space-y-4">
+      <form onsubmit="submitEditItem(event)" class="space-y-4">
         <input type="hidden" id="editId">
-        <div>
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nama Barang</label>
-          <input type="text" id="editName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none">
+        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nama Barang</label><input type="text" id="editName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label><select id="editCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none"><option value="Alat / Sabun">Alat / Sabun</option><option value="Habis Pakai">Habis Pakai</option></select></div>
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Lokasi / Box</label><input type="text" id="editLocation" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label>
-            <select id="editCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none">
-              <option value="Alat / Sabun">Alat / Sabun</option>
-              <option value="Habis Pakai">Habis Pakai</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Lokasi / Box</label>
-            <input type="text" id="editLocation" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none">
-          </div>
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Total Stok Awal</label><input type="number" id="editTotal" required step="0.01" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none"></div>
+          <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label><input type="text" id="editUnit" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none"></div>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Total Stok Awal</label>
-            <input type="number" id="editTotal" required step="0.01" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label>
-            <input type="text" id="editUnit" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
-          <input type="text" id="editDesc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none">
-        </div>
-        <div class="pt-2">
-          <button type="submit" id="submitEditBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Update Data</button>
-        </div>
+        <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label><input type="text" id="editDesc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none"></div>
+        <div class="pt-2"><button type="submit" id="submitEditBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Update Data</button></div>
       </form>
     </div>
   </div>
