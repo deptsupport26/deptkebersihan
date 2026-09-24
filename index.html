@@ -26,27 +26,27 @@
     .dark input, .dark select { background-color: #0f172a !important; color: #f8fafc !important; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-sky-200">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-emerald-200">
 
   <div id="toast" class="fixed top-4 right-4 z-50 transform translate-y-[-150%] transition-transform duration-300 bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-bold border border-slate-700">
-    <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
+    <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
     <span id="toastMsg">Berhasil!</span>
   </div>
 
   <header class="sticky top-0 z-40 bg-white/80 dark:bg-[#1e293b]/90 backdrop-blur-md shadow-sm border-b border-slate-200 px-4 py-4 transition-colors">
     <div class="max-w-2xl mx-auto flex items-center justify-between">
       <div class="flex items-start gap-3">
-        <div class="bg-sky-100 text-sky-600 p-2.5 rounded-xl mt-1"><i class="fa-solid fa-leaf text-xl"></i></div>
+        <div class="bg-emerald-100 text-emerald-600 p-2.5 rounded-xl mt-1"><i class="fa-solid fa-leaf text-xl"></i></div>
         <div>
           <h1 class="text-lg font-extrabold text-slate-800 tracking-tight">Departemen Kebersihan</h1>
-          <p class="text-[10px] font-bold text-sky-600 uppercase tracking-widest">Pertemuan Wilayah 3 Oktober 2026</p>
+          <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Pertemuan Wilayah 3 Oktober 2026</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-yellow-400 hover:bg-slate-200 transition-all shrink-0">
           <i id="themeIcon" class="fa-solid fa-moon"></i>
         </button>
-        <button onclick="openAddModal()" class="w-10 h-10 lg:w-auto lg:px-4 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-sm font-bold shadow-md shadow-sky-200 transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
+        <button onclick="openAddModal()" class="w-10 h-10 lg:w-auto lg:px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-200 transition-all active:scale-95 shrink-0 flex items-center justify-center gap-1.5">
           <i class="fa-solid fa-plus"></i> <span class="hidden lg:inline">Tambah</span>
         </button>
       </div>
@@ -57,23 +57,23 @@
     <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 mb-5 transition-colors">
       <div class="flex gap-2 mb-3">
         <div class="relative flex-1 group">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400"><i class="fa-solid fa-magnifying-glass text-sm"></i></div>
-          <input type="text" id="search" oninput="renderData()" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:border-sky-500 block w-full pl-10 p-3 outline-none" placeholder="Cari nama barang, box, lokasi, peminjam...">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors"><i class="fa-solid fa-magnifying-glass text-sm"></i></div>
+          <input type="text" id="search" oninput="renderData()" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 block w-full pl-10 p-3 outline-none" placeholder="Cari nama barang, box, lokasi, peminjam...">
         </div>
         <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl shrink-0 gap-1 items-center transition-colors">
-          <button onclick="setViewMode('grid')" id="btnGridView" class="w-10 h-10 rounded-lg text-sm font-bold bg-white text-sky-600 shadow-sm"><i class="fa-solid fa-border-all"></i></button>
+          <button onclick="setViewMode('grid')" id="btnGridView" class="w-10 h-10 rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm"><i class="fa-solid fa-border-all"></i></button>
           <button onclick="setViewMode('list')" id="btnListView" class="w-10 h-10 rounded-lg text-sm font-bold text-slate-400"><i class="fa-solid fa-list-ul"></i></button>
         </div>
       </div>
       <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button onclick="setCategory('Semua', this)" class="cat-chip cat-active px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-sky-600 text-white shadow-sm">Semua</button>
+        <button onclick="setCategory('Semua', this)" class="cat-chip cat-active px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-emerald-600 text-white shadow-sm shadow-emerald-200">Semua</button>
         <button onclick="setCategory('Alat / Sabun', this)" class="cat-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-white text-slate-500 border border-slate-200">Alat / Sabun</button>
         <button onclick="setCategory('Habis Pakai', this)" class="cat-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-white text-slate-500 border border-slate-200">Habis Pakai</button>
       </div>
     </div>
 
     <div id="loading" class="flex flex-col items-center justify-center py-16">
-      <div class="w-12 h-12 border-4 border-slate-100 dark:border-slate-700 border-t-sky-500 rounded-full animate-spin mb-4"></div>
+      <div class="w-12 h-12 border-4 border-slate-100 dark:border-slate-700 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
       <p class="text-slate-500 font-medium text-sm animate-pulse">Menghubungkan ke Master Data...</p>
     </div>
 
@@ -98,16 +98,16 @@
            <div>
               <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jumlah Barang</label>
               <div class="flex items-center gap-3">
-                 <input type="number" id="pinjamQty" value="1" step="0.01" min="0" required class="w-24 text-center bg-white border border-slate-200 rounded-xl p-2 text-base font-extrabold text-sky-600 focus:ring-2 focus:border-sky-500 outline-none">
+                 <input type="number" id="pinjamQty" value="1" step="0.01" min="0" required class="w-24 text-center bg-white border border-slate-200 rounded-xl p-2 text-base font-extrabold text-emerald-600 focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-colors">
                  <span id="pinjamSatuan" class="text-sm font-semibold text-slate-400">pcs</span>
               </div>
            </div>
            <div>
               <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" id="labelNamaPeminjam">Nama Kru</label>
-              <select id="pinjamNamaSelect" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none mb-2">
+              <select id="pinjamNamaSelect" class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none mb-2 transition-colors">
                  <option value="">-- Pilih Nama --</option>
               </select>
-              <input type="text" id="pinjamNamaInput" placeholder="Atau ketik manual..." class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none">
+              <input type="text" id="pinjamNamaInput" placeholder="Atau ketik manual..." class="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-colors">
            </div>
         </div>
         <button type="submit" id="pinjamSubmitBtn" class="w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Konfirmasi</button>
@@ -120,7 +120,7 @@
     <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto transform transition-all dark:bg-[#1e293b]">
       <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2">
-          <div class="bg-green-100 text-green-600 p-2 rounded-lg"><i class="fa-solid fa-box-open"></i></div>
+          <div class="bg-emerald-100 text-emerald-600 p-2 rounded-lg"><i class="fa-solid fa-box-open"></i></div>
           <h3 class="text-base font-extrabold text-slate-800">Barang Baru</h3>
         </div>
         <button onclick="closeAddModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
@@ -128,37 +128,37 @@
       <form id="addItemForm" onsubmit="submitNewItem(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nama Barang</label>
-          <input type="text" id="newName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none">
+          <input type="text" id="newName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label>
-            <select id="newCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none">
+            <select id="newCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
               <option value="Alat / Sabun">Alat / Sabun</option>
               <option value="Habis Pakai">Habis Pakai</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Lokasi / Box</label>
-            <input type="text" id="newLocation" placeholder="Contoh: Box 1 (Solo)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none">
+            <input type="text" id="newLocation" placeholder="Contoh: Box 1 (Solo)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Total Stok</label>
-            <input type="number" id="newTotal" required step="0.01" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none">
+            <input type="number" id="newTotal" required step="0.01" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label>
-            <input type="text" id="newUnit" placeholder="pcs/botol" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none">
+            <input type="text" id="newUnit" placeholder="pcs/botol" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
           </div>
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
-          <input type="text" id="newDesc" placeholder="Opsional..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-sky-500 outline-none">
+          <input type="text" id="newDesc" placeholder="Opsional..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none">
         </div>
         <div class="pt-2">
-          <button type="submit" id="submitBtn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Simpan ke Database</button>
+          <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-emerald-200 active:scale-95">Simpan ke Master Data</button>
         </div>
       </form>
     </div>
