@@ -1,3 +1,4 @@
+// URL sudah diperbarui dengan link yang benar!
 const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
 
 let currentViewMode = 'grid';
@@ -17,11 +18,10 @@ function toggleDarkMode() {
   }
 }
 
-// Fitur Ikon Dinamis berdasarkan Nama Barang
 function getItemIcon(itemName) {
   const name = itemName.toLowerCase();
   if (name.includes('sapu')) return '<i class="fa-solid fa-broom text-amber-600 text-xl"></i>';
-  if (name.includes('wiper') || name.includes('kanebo') || name.includes('lap') || name.includes('pel') || name.includes('spons')) return '<i class="fa-solid fa-mitten text-sky-500 text-xl"></i>';
+  if (name.includes('wiper') || name.includes('kanebo') || name.includes('lap') || name.includes('pel') || name.includes('spons')) return '<i class="fa-solid fa-mitten text-emerald-500 text-xl"></i>';
   if (name.includes('sabun') || name.includes('hand soap') || name.includes('sunlight') || name.includes('sos') || name.includes('wipol') || name.includes('karbol') || name.includes('porstex') || name.includes('soklin')) return '<i class="fa-solid fa-pump-soap text-pink-500 text-xl"></i>';
   if (name.includes('plastik') || name.includes('kresek') || name.includes('sampah') || name.includes('engkrak') || name.includes('pengki')) return '<i class="fa-solid fa-trash-can text-slate-500 text-xl"></i>';
   if (name.includes('tissu') || name.includes('tisu')) return '<i class="fa-solid fa-scroll text-slate-400 text-xl"></i>';
@@ -70,10 +70,10 @@ function setViewMode(mode) {
   const listBtn = document.getElementById('btnListView');
   
   if(mode === 'grid') {
-    gridBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-sky-600 shadow-sm transition-all";
+    gridBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all";
     listBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold text-slate-400 hover:text-slate-600 transition-all dark:bg-slate-800";
   } else {
-    listBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-sky-600 shadow-sm transition-all";
+    listBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all";
     gridBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold text-slate-400 hover:text-slate-600 transition-all dark:bg-slate-800";
   }
   renderData();
@@ -84,7 +84,7 @@ function setCategory(category, el) {
   document.querySelectorAll('.cat-chip').forEach(chip => {
     chip.className = "cat-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all dark:bg-slate-800 dark:border-slate-700";
   });
-  el.className = "cat-chip cat-active px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-sky-600 text-white shadow-sm shadow-sky-200 transition-all";
+  el.className = "cat-chip cat-active px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-emerald-600 text-white shadow-sm shadow-emerald-200 transition-all";
   renderData();
 }
 
@@ -119,7 +119,6 @@ function renderData() {
     const sisa = Number(item.Sisa_Stok) || 0;
     const total = Number(item.Total_Stok) || 0;
     
-    // Logika Pemisahan Waktu dan Nama (Teks Log Jam)
     const dipinjamOlehRaw = item.Dipinjam_Oleh || ''; 
     let infoPeminjam = '';
     if(dipinjamOlehRaw) {
@@ -147,7 +146,7 @@ function renderData() {
           <div class="absolute top-0 right-0 w-1.5 h-full ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'} rounded-r-2xl"></div>
           <div>
             <div class="flex justify-between items-center text-[10px] mb-3">
-              <span class="text-slate-500 font-bold flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-sky-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
+              <span class="text-slate-500 font-bold flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
               <div class="flex items-center gap-2">
                 <span class="font-black text-slate-300 dark:text-slate-600 uppercase tracking-wider">${item.Kategori}</span>
                 <button onclick="openEditItemModal('${item.ID_Barang}')" class="w-6 h-6 flex items-center justify-center bg-amber-50 text-amber-500 dark:bg-amber-500/10 rounded hover:bg-amber-100 transition-colors"><i class="fa-solid fa-pen"></i></button>
@@ -180,7 +179,7 @@ function renderData() {
              <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700 ml-1">${itemIcon}</div>
              <div class="flex-1 min-w-0">
                <div class="flex justify-between items-center mb-0.5">
-                 <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-sky-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
+                 <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
                  <button onclick="openEditItemModal('${item.ID_Barang}')" class="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
                </div>
                <h4 class="font-bold text-slate-800 text-sm truncate mb-0.5">${item.Nama_Barang}</h4>
