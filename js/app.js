@@ -1,47 +1,68 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
+const API_URL = "GANTI_DENGAN_URL_WEB_APP_ANDA_YANG_BARU";
+const APP_PIN = "KEBERSIHANOKT26";
 
 let currentViewMode = 'grid';
 let currentCategory = 'Semua';
 let inventoryData = [];
+let savedPin = localStorage.getItem('appPin') || '';
 
-// 1. Registrasi PWA (Service Worker)
+// --- LOGIN SCREEN LOGIC ---
+document.addEventListener('DOMContentLoaded', () => {
+    if (savedPin === APP_PIN) {
+        // Jika sudah pernah login di HP ini, langsung muat data
+        loadData();
+    } else {
+        // Jika belum, tampilkan layar gembok
+        document.getElementById('pinModal').classList.remove('hidden');
+    }
+});
+
+function unlockApp() {
+    const val = document.getElementById('inputPin').value.toUpperCase();
+    if (val === APP_PIN) {
+        savedPin = val;
+        localStorage.setItem('appPin', savedPin); // Ingat PIN di HP
+        document.getElementById('pinModal').classList.add('hidden');
+        loadData();
+    } else {
+        alert("Kata Sandi Salah! Silakan coba lagi.");
+        document.getElementById('inputPin').value = '';
+    }
+}
+
+// Fitur API Request yang selalu menyertakan PIN ke server Google
+async function apiRequest(payload) {
+    payload.pin = savedPin;
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const json = await res.json();
+    if(json.status === 'error') throw new Error(json.message);
+    return json;
+}
+// --------------------------
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(()=>console.log("PWA Ready"));
 }
 
-// 2. Pull-To-Refresh Logic
 let pullStartY = 0;
-document.addEventListener('touchstart', e => { 
-  if(window.scrollY === 0) pullStartY = e.touches[0].clientY; 
-}, {passive: true});
-
+document.addEventListener('touchstart', e => { if(window.scrollY === 0) pullStartY = e.touches[0].clientY; }, {passive: true});
 document.addEventListener('touchmove', e => {
   if(window.scrollY === 0 && pullStartY > 0) {
-      let y = e.touches[0].clientY;
-      if(y - pullStartY > 70) document.getElementById('ptr-indicator').classList.remove('-translate-y-full');
+      if(e.touches[0].clientY - pullStartY > 70) document.getElementById('ptr-indicator').classList.remove('-translate-y-full');
   }
 }, {passive: true});
-
 document.addEventListener('touchend', e => {
   if(window.scrollY === 0 && pullStartY > 0) {
-      let y = e.changedTouches[0].clientY;
-      if(y - pullStartY > 80) loadData(); // Triggers refresh
+      if(e.changedTouches[0].clientY - pullStartY > 80) loadData();
       document.getElementById('ptr-indicator').classList.add('-translate-y-full');
       pullStartY = 0;
   }
 });
 
-// Fitur UI Standar
 function toggleDarkMode() {
-  const html = document.documentElement;
-  const icon = document.getElementById('themeIcon');
-  if (html.classList.contains('dark')) {
-    html.classList.remove('dark');
-    icon.className = 'fa-solid fa-moon';
-  } else {
-    html.classList.add('dark');
-    icon.className = 'fa-solid fa-sun text-yellow-400';
-  }
+  const html = document.documentElement; const icon = document.getElementById('themeIcon');
+  if (html.classList.contains('dark')) { html.classList.remove('dark'); icon.className = 'fa-solid fa-moon'; } 
+  else { html.classList.add('dark'); icon.className = 'fa-solid fa-sun text-yellow-400'; }
 }
 
 function getItemIcon(itemName) {
@@ -61,12 +82,9 @@ function getItemIcon(itemName) {
   return '<i class="fa-solid fa-box-open text-slate-400 text-xl"></i>'; 
 }
 
-document.addEventListener('DOMContentLoaded', loadData);
-
 async function loadData() {
   document.getElementById('loading').style.display = 'flex';
   document.getElementById('content').innerHTML = '';
-  
   try {
     const invRes = await fetch(API_URL + "?type=inventaris");
     const invJson = await invRes.json();
@@ -85,8 +103,7 @@ async function loadData() {
 
 function setViewMode(mode) {
   currentViewMode = mode;
-  const gridBtn = document.getElementById('btnGridView');
-  const listBtn = document.getElementById('btnListView');
+  const gridBtn = document.getElementById('btnGridView'); const listBtn = document.getElementById('btnListView');
   if(mode === 'grid') {
     gridBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all";
     listBtn.className = "w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold text-slate-400 hover:text-slate-600 transition-all dark:bg-slate-800";
@@ -107,10 +124,8 @@ function setCategory(category, el) {
 }
 
 function showToast(msg) {
-  const toast = document.getElementById('toast');
-  document.getElementById('toastMsg').innerText = msg;
-  toast.style.transform = 'translateY(0)';
-  setTimeout(() => { toast.style.transform = 'translateY(-150%)'; }, 3000);
+  const toast = document.getElementById('toast'); document.getElementById('toastMsg').innerText = msg;
+  toast.style.transform = 'translateY(0)'; setTimeout(() => { toast.style.transform = 'translateY(-150%)'; }, 3000);
 }
 
 function renderData() {
@@ -139,12 +154,11 @@ function renderData() {
            let colorStatus = isKembali ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
            logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
         });
-        
         infoPeminjam = `
         <div class="mt-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg p-2.5">
            <div class="flex justify-between items-center mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">
                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Log Histori</span>
-               <button onclick="clearHistory('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-[9px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-1 rounded"><i class="fa-solid fa-eraser"></i> Bersihkan</button>
+               <button onclick="clearHistory('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-[9px] font-bold text-rose-500 hover:text-rose-600 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-eraser"></i> Bersihkan</button>
            </div>
            ${logHTML}
         </div>`;
@@ -179,7 +193,6 @@ function renderData() {
           </div>
         </div>`;
     } else {
-      // List View TINDER SWIPE
       content.innerHTML += `
         <div class="relative w-full rounded-2xl mb-1 overflow-hidden bg-slate-100 dark:bg-slate-800">
            <div class="absolute inset-y-0 left-0 w-1/2 flex items-center pl-5 text-emerald-600 font-black"><i class="fa-solid fa-plus mr-2"></i> KEMBALI</div>
@@ -203,48 +216,27 @@ function renderData() {
         </div>`;
     }
   });
-
   if(currentViewMode === 'list') initSwipeCards();
 }
 
-// 3. FUNGSI TINDER SWIPE (GESER)
 function initSwipeCards() {
     document.querySelectorAll('.swipe-card').forEach(card => {
-        let startX = 0;
-        let isSwiping = false;
-
-        card.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isSwiping = true;
-            card.style.transition = 'none'; 
-        }, {passive: true});
-
+        let startX = 0; let isSwiping = false;
+        card.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isSwiping = true; card.style.transition = 'none'; }, {passive: true});
         card.addEventListener('touchmove', (e) => {
-            if(!isSwiping) return;
-            let diffX = e.touches[0].clientX - startX;
+            if(!isSwiping) return; let diffX = e.touches[0].clientX - startX;
             if(Math.abs(diffX) > 15) card.style.transform = `translateX(${diffX}px)`;
         }, {passive: true});
-
         card.addEventListener('touchend', (e) => {
-            isSwiping = false;
-            card.style.transition = 'transform 0.3s ease-out';
+            isSwiping = false; card.style.transition = 'transform 0.3s ease-out';
             let diffX = e.changedTouches[0].clientX - startX;
-
-            if (diffX > 90) { // Geser Kanan (Kembali)
+            if (diffX > 90) { 
                 card.style.transform = `translateX(120px)`;
-                setTimeout(() => { 
-                    card.style.transform = `translateX(0)`; 
-                    openPinjamModal(card.dataset.id, card.dataset.name, -1, card.dataset.unit);
-                }, 200);
-            } else if (diffX < -90) { // Geser Kiri (Pakai)
+                setTimeout(() => { card.style.transform = `translateX(0)`; openPinjamModal(card.dataset.id, card.dataset.name, -1, card.dataset.unit); }, 200);
+            } else if (diffX < -90) { 
                 card.style.transform = `translateX(-120px)`;
-                setTimeout(() => { 
-                    card.style.transform = `translateX(0)`; 
-                    openPinjamModal(card.dataset.id, card.dataset.name, 1, card.dataset.unit);
-                }, 200);
-            } else { // Batal Geser
-                card.style.transform = `translateX(0)`;
-            }
+                setTimeout(() => { card.style.transform = `translateX(0)`; openPinjamModal(card.dataset.id, card.dataset.name, 1, card.dataset.unit); }, 200);
+            } else { card.style.transform = `translateX(0)`; }
         });
     });
 }
@@ -259,25 +251,17 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
     document.getElementById('pinjamQty').value = ''; 
     document.getElementById('pinjamNamaInput').value = '';
     
-    const title = document.getElementById('pinjamTitle');
-    const icon = document.getElementById('pinjamIcon');
-    const desc = document.getElementById('pinjamDesc');
-    const btn = document.getElementById('pinjamSubmitBtn');
+    const title = document.getElementById('pinjamTitle'); const icon = document.getElementById('pinjamIcon');
+    const desc = document.getElementById('pinjamDesc'); const btn = document.getElementById('pinjamSubmitBtn');
     
     if (aksi === 1) {
-        title.innerText = "Pakai Barang";
-        icon.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-rose-100 text-rose-500 text-xl";
-        icon.innerHTML = "<i class=\"fa-solid fa-hand-holding-hand\"></i>";
+        title.innerText = "Pakai Barang"; icon.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-rose-100 text-rose-500 text-xl"; icon.innerHTML = "<i class=\"fa-solid fa-hand-holding-hand\"></i>";
         desc.innerHTML = `Barang: <strong class="text-slate-800 dark:text-white">${namaBarang}</strong>. Berapa jumlah yang ingin dipakai dan siapa yang bawa?`;
-        btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg transition-all active:scale-95 bg-rose-500 hover:bg-rose-600 shadow-rose-200 dark:shadow-none";
-        btn.innerText = "Konfirmasi Pakai";
+        btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg transition-all active:scale-95 bg-rose-500 hover:bg-rose-600 shadow-rose-200 dark:shadow-none"; btn.innerText = "Konfirmasi Pakai";
     } else {
-        title.innerText = "Kembalikan Barang";
-        icon.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-emerald-100 text-emerald-500 text-xl";
-        icon.innerHTML = "<i class=\"fa-solid fa-box-archive\"></i>";
+        title.innerText = "Kembalikan Barang"; icon.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-emerald-100 text-emerald-500 text-xl"; icon.innerHTML = "<i class=\"fa-solid fa-box-archive\"></i>";
         desc.innerHTML = `Barang: <strong class="text-slate-800 dark:text-white">${namaBarang}</strong>. Berapa jumlah yang dikembalikan dan siapa yang mengembalikan?`;
-        btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 dark:shadow-none";
-        btn.innerText = "Konfirmasi Kembali";
+        btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 dark:shadow-none"; btn.innerText = "Konfirmasi Kembali";
     }
     document.getElementById('pinjamModal').classList.remove('hidden');
 }
@@ -285,91 +269,71 @@ function closePinjamModal() { document.getElementById('pinjamModal').classList.a
 
 async function submitPinjam(event) {
     event.preventDefault();
-    const id = document.getElementById('pinjamItemId').value;
-    const baseAksi = Number(document.getElementById('pinjamAksi').value); 
-    const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
+    const btn = document.getElementById('pinjamSubmitBtn'); const id = document.getElementById('pinjamItemId').value;
+    const baseAksi = Number(document.getElementById('pinjamAksi').value); const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
     if (isNaN(qtyInput) || qtyInput <= 0) { alert("Jumlah barang tidak valid!"); return; }
-
-    const finalChangeAmount = baseAksi * qtyInput; 
     let namaPeminjam = document.getElementById('pinjamNamaInput').value;
     if (!namaPeminjam) { alert("Nama wajib diisi!"); return; }
 
-    const btn = document.getElementById('pinjamSubmitBtn');
-    btn.innerText = "Menyimpan...";
-    btn.disabled = true;
-
+    btn.innerText = "Menyimpan..."; btn.disabled = true;
     try {
-      await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'adjust_stock', id: id, change: finalChangeAmount, nama: namaPeminjam }) });
-      closePinjamModal();
-      showToast("Tercatat ke Log Peminjaman!");
-      loadData(); 
-    } catch(e) { showToast("Gagal menyimpan."); btn.disabled = false; }
+      await apiRequest({ action: 'adjust_stock', id: id, change: baseAksi * qtyInput, nama: namaPeminjam });
+      closePinjamModal(); showToast("Tercatat ke Master Database!"); loadData(); 
+    } catch(e) { 
+      if(e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+      else { showToast("Gagal menyimpan."); btn.disabled = false; }
+    }
 }
 
 async function clearHistory(id, namaBarang) {
     if(!confirm(`Yakin ingin menghapus seluruh histori peminjaman untuk ${namaBarang}?`)) return;
-    let item = inventoryData.find(i => i.ID_Barang === id);
-    if (item) { item.Dipinjam_Oleh = ''; renderData(); }
-
     try {
-      await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'clear_history', id: id }) });
-      showToast("Histori berhasil dibersihkan!");
-      loadData();
-    } catch(e) { showToast("Gagal membersihkan histori."); }
+      await apiRequest({ action: 'clear_history', id: id }); showToast("Histori berhasil dibersihkan!"); loadData();
+    } catch(e) { 
+      if(e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+      else { showToast("Gagal membersihkan histori."); }
+    }
 }
 
 async function submitNewItem(event) {
   event.preventDefault();
-  const btn = document.getElementById('submitBtn');
-  btn.innerText = "Memproses...";
-  btn.disabled = true;
-
+  const btn = document.getElementById('submitBtn'); btn.innerText = "Memproses..."; btn.disabled = true;
   const newItem = {
     Nama_Barang: document.getElementById('newName').value, Kategori: document.getElementById('newCategory').value,
     Lokasi_Simpan: document.getElementById('newLocation').value, Total_Stok: document.getElementById('newTotal').value,
     Satuan: document.getElementById('newUnit').value, Keterangan: document.getElementById('newDesc').value
   };
-
   try {
-    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'create_item', item: newItem }) });
-    closeAddModal();
-    document.getElementById('addItemForm').reset();
-    showToast("Barang berhasil ditambah!");
-    loadData();
-  } catch (err) { alert("Gagal menyimpan."); btn.disabled = false; }
+    await apiRequest({ action: 'create_item', item: newItem });
+    closeAddModal(); document.getElementById('addItemForm').reset(); showToast("Barang berhasil ditambah!"); loadData();
+  } catch (e) { 
+    if(e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+    else { showToast("Gagal menyimpan."); btn.disabled = false; btn.innerText = "Simpan ke Master Data"; }
+  }
 }
 
 function openEditItemModal(id) {
-  const item = inventoryData.find(i => i.ID_Barang === id);
-  if(!item) return;
-  document.getElementById('editId').value = item.ID_Barang;
-  document.getElementById('editName').value = item.Nama_Barang;
-  document.getElementById('editCategory').value = item.Kategori;
-  document.getElementById('editLocation').value = item.Lokasi_Simpan;
-  document.getElementById('editTotal').value = item.Total_Stok;
-  document.getElementById('editUnit').value = item.Satuan;
-  document.getElementById('editDesc').value = item.Keterangan || '';
-  document.getElementById('editItemModal').classList.remove('hidden');
+  const item = inventoryData.find(i => i.ID_Barang === id); if(!item) return;
+  document.getElementById('editId').value = item.ID_Barang; document.getElementById('editName').value = item.Nama_Barang;
+  document.getElementById('editCategory').value = item.Kategori; document.getElementById('editLocation').value = item.Lokasi_Simpan;
+  document.getElementById('editTotal').value = item.Total_Stok; document.getElementById('editUnit').value = item.Satuan;
+  document.getElementById('editDesc').value = item.Keterangan || ''; document.getElementById('editItemModal').classList.remove('hidden');
 }
 function closeEditItemModal() { document.getElementById('editItemModal').classList.add('hidden'); }
 
 async function submitEditItem(event) {
   event.preventDefault();
-  const btn = document.getElementById('submitEditBtn');
-  btn.innerText = "Menyimpan...";
-  btn.disabled = true;
-
+  const btn = document.getElementById('submitEditBtn'); btn.innerText = "Menyimpan..."; btn.disabled = true;
   const editedItem = {
     Nama_Barang: document.getElementById('editName').value, Kategori: document.getElementById('editCategory').value,
     Lokasi_Simpan: document.getElementById('editLocation').value, Total_Stok: document.getElementById('editTotal').value,
     Satuan: document.getElementById('editUnit').value, Keterangan: document.getElementById('editDesc').value
   };
-  const id = document.getElementById('editId').value;
-
   try {
-    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'edit_item', id: id, item: editedItem }) });
-    closeEditItemModal();
-    showToast("Perubahan barang disimpan!");
-    loadData();
-  } catch (err) { alert("Gagal mengedit barang."); btn.disabled = false; }
+    await apiRequest({ action: 'edit_item', id: document.getElementById('editId').value, item: editedItem });
+    closeEditItemModal(); showToast("Perubahan barang disimpan!"); loadData();
+  } catch (e) { 
+    if(e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+    else { showToast("Gagal mengedit barang."); btn.disabled = false; btn.innerText = "Update Data"; }
+  }
 }
