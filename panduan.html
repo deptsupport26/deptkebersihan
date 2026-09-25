@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Panduan - Dept. Kebersihan</title>
+  <meta name="theme-color" content="#10b981">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    .dark body { background-color: #0f172a; color: #f8fafc; }
+    .dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+    .dark .text-slate-800 { color: #f8fafc !important; }
+    .dark .text-slate-500 { color: #94a3b8 !important; }
+    .dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased pb-10">
+
+  <!-- Header dengan Tombol Kembali -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200 px-4 py-4 dark:bg-[#1e293b]/90 dark:border-slate-700">
+    <div class="max-w-2xl mx-auto flex items-center gap-4">
+      <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all dark:bg-slate-800 dark:text-slate-300">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="text-lg font-extrabold text-slate-800 tracking-tight">Panduan Aplikasi</h1>
+        <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Cara Penggunaan Sistem</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="p-4 max-w-2xl mx-auto space-y-4 mt-2">
+    <!-- Poin 1 -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">1. Cara Pasang di HP (PWA)</h3>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed mb-2">Aplikasi ini bisa diinstal tanpa lewat PlayStore agar lebih ringan dan cepat:</p>
+      <ul class="text-sm text-slate-500 list-disc pl-5 space-y-1">
+        <li>Buka web di Google Chrome (Android) atau Safari (iPhone).</li>
+        <li>Pilih menu opsi (titik tiga / tombol share).</li>
+        <li>Pilih <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong>.</li>
+      </ul>
+    </div>
+
+    <!-- Poin 2 -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-rose-100 text-rose-500 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-hand-pointer"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">2. Cara Cepat Pakai/Kembali Barang</h3>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed mb-2">Dalam tampilan <strong>Mode List</strong> (Daftar Baris), Anda bisa menggunakan fitur geser (swipe):</p>
+      <ul class="text-sm text-slate-500 list-disc pl-5 space-y-1">
+        <li>Geser barang ke <strong>Kiri</strong> untuk <strong>Memakai</strong> barang.</li>
+        <li>Geser barang ke <strong>Kanan</strong> untuk <strong>Mengembalikan</strong> barang.</li>
+      </ul>
+    </div>
+
+    <!-- Poin 3 -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-file-pdf"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">3. Cetak Laporan Evaluasi</h3>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed">Gunakan tombol <strong>Laporan (PDF)</strong> di atas atau pojok kanan bawah. Terdapat dua jenis PDF: Stok Akhir (untuk cek barang yang hilang/habis) dan Penggunaan (untuk melacak siapa yang meminjam barang).</p>
+    </div>
+  </main>
+
+  <div class="px-4 max-w-2xl mx-auto mt-6">
+     <a href="index.html" class="block w-full bg-slate-800 hover:bg-slate-900 text-white text-center font-bold py-4 rounded-xl text-sm shadow-lg active:scale-95 transition-all dark:bg-slate-700">Kembali ke Beranda</a>
+  </div>
+
+  <script>
+    // Menyamakan Dark Mode dengan sistem sebelumnya
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</body>
+</html>
