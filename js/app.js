@@ -1,14 +1,13 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
 const APP_PIN = "KEBERSIHANOKT26";
 
-let currentViewMode = 'list'; // Default sudah jadi List View
+let currentViewMode = 'list'; 
 let currentCategory = 'Semua';
 let inventoryData = [];
 let savedPin = localStorage.getItem('appPin') || '';
 
 // --- 1. LOGIN SCREEN LOGIC ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Sesuaikan ikon tema saat web pertama dibuka
     const icon = document.getElementById('themeIcon');
     if (document.documentElement.classList.contains('dark')) {
         if(icon) icon.className = 'fa-solid fa-sun text-yellow-400';
@@ -107,9 +106,12 @@ function getItemIcon(itemName) {
     return '<i class="fa-solid fa-box-open text-slate-400 text-xl"></i>';
 }
 
-async function loadData() {
-    document.getElementById('loading').style.display = 'flex';
-    document.getElementById('content').innerHTML = '';
+// SILENT LOADING SYSTEM
+async function loadData(isSilent = false) {
+    if (!isSilent) {
+        document.getElementById('loading').style.display = 'flex';
+        document.getElementById('content').innerHTML = '';
+    }
     
     try {
         const invRes = await fetch(API_URL + "?type=inventaris");
@@ -118,12 +120,14 @@ async function loadData() {
         document.getElementById('loading').style.display = 'none';
         renderData();
     } catch (err) {
-        document.getElementById('loading').innerHTML = `
-            <div class="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
-                <p class="text-slate-800 dark:text-white font-bold mb-1">Gagal Terhubung</p>
-                <button onclick="loadData()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold mt-2">Coba Muat Ulang</button>
-            </div>`;
+        if (!isSilent) {
+            document.getElementById('loading').innerHTML = `
+                <div class="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
+                    <p class="text-slate-800 dark:text-white font-bold mb-1">Gagal Terhubung</p>
+                    <button onclick="loadData()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold mt-2">Coba Muat Ulang</button>
+                </div>`;
+        }
     }
 }
 
@@ -348,7 +352,7 @@ async function submitPinjam(event) {
         
         closePinjamModal(); 
         showToast("Tercatat ke Master Database!"); 
-        loadData(); 
+        loadData(true); // SILENT LOADING UPDATE
         
     } catch(e) { 
         if (e && e.message === 'PIN_SALAH') { 
@@ -367,7 +371,8 @@ async function clearHistory(id, namaBarang) {
     if (!confirm(`Yakin ingin menghapus seluruh histori peminjaman untuk ${namaBarang}?`)) return;
     try {
         await apiRequest({ action: 'clear_history', id: id }); 
-        showToast("Histori berhasil dibersihkan!"); loadData();
+        showToast("Histori berhasil dibersihkan!"); 
+        loadData(true); // SILENT LOADING UPDATE
     } catch(e) { 
         if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
         else { showToast("Gagal membersihkan histori."); }
@@ -384,7 +389,8 @@ async function submitNewItem(event) {
     };
     try {
         await apiRequest({ action: 'create_item', item: newItem });
-        closeAddModal(); document.getElementById('addItemForm').reset(); showToast("Barang berhasil ditambah!"); loadData();
+        closeAddModal(); document.getElementById('addItemForm').reset(); showToast("Barang berhasil ditambah!"); 
+        loadData(true); // SILENT LOADING UPDATE
     } catch (e) { 
         if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
         else { showToast("Gagal menyimpan."); btn.disabled = false; btn.innerText = "Simpan ke Master Data"; }
@@ -411,7 +417,8 @@ async function submitEditItem(event) {
     };
     try {
         await apiRequest({ action: 'edit_item', id: document.getElementById('editId').value, item: editedItem });
-        closeEditItemModal(); showToast("Perubahan barang disimpan!"); loadData();
+        closeEditItemModal(); showToast("Perubahan barang disimpan!"); 
+        loadData(true); // SILENT LOADING UPDATE
     } catch (e) { 
         if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
         else { showToast("Gagal mengedit barang."); btn.disabled = false; btn.innerText = "Update Data"; }
