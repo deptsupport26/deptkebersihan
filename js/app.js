@@ -391,8 +391,6 @@ function generatePDF(type) {
     doc.text("Pertemuan Wilayah - Oktober 2026", 105, 26, { align: "center" });
     doc.line(14, 30, 196, 30);
 
-    let tableData = [];
-    let tableHeaders = [];
     let fileName = "";
     
     if (type === 'stok') {
@@ -403,15 +401,73 @@ function generatePDF(type) {
         doc.setFontSize(9);
         doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
         
-        tableHeaders = [["ID Barang", "Nama Barang", "Lokasi", "Total Awal", "Sedang Dipakai", "SISA AKHIR"]];
+        const tableHeaders = [["ID Barang", "Nama Barang", "Keterangan", "Lokasi", "Total", "Dipakai", "SISA"]];
+        let alatData = [];
+        let habisPakaiData = [];
+
+        // Pisahkan data berdasarkan kategori
         inventoryData.forEach(item => {
-            tableData.push([
-                item.ID_Barang, item.Nama_Barang, item.Lokasi_Simpan, 
+            const rowData = [
+                item.ID_Barang, 
+                item.Nama_Barang, 
+                item.Keterangan || '-', 
+                item.Lokasi_Simpan, 
                 `${item.Total_Stok} ${item.Satuan}`, 
                 `${item.Sedang_Dipakai} ${item.Satuan}`, 
                 `${item.Sisa_Stok} ${item.Satuan}`
-            ]);
+            ];
+            
+            if (item.Kategori === "Alat / Sabun") {
+                alatData.push(rowData);
+            } else {
+                habisPakaiData.push(rowData);
+            }
         });
+
+        let currentY = 50;
+
+        // Tabel 1: Alat / Sabun
+        if (alatData.length > 0) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(16, 185, 129); // Emerald color
+            doc.text("KATEGORI: ALAT / SABUN", 14, currentY);
+            
+            doc.autoTable({
+                startY: currentY + 3,
+                head: tableHeaders,
+                body: alatData,
+                theme: 'grid',
+                headStyles: { fillColor: [16, 185, 129] },
+                styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
+                columnStyles: { 6: { fontStyle: 'bold', textColor: [225, 29, 72] } }, // Kolom Sisa merah
+                margin: { top: 10 }
+            });
+            currentY = doc.lastAutoTable.finalY + 10;
+        }
+
+        // Tabel 2: Habis Pakai
+        if (habisPakaiData.length > 0) {
+            // Cek jika halaman tidak muat, buat halaman baru
+            if (currentY > 250) { doc.addPage(); currentY = 20; }
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(59, 130, 246); // Blue color
+            doc.text("KATEGORI: HABIS PAKAI", 14, currentY);
+            
+            doc.autoTable({
+                startY: currentY + 3,
+                head: tableHeaders,
+                body: habisPakaiData,
+                theme: 'grid',
+                headStyles: { fillColor: [59, 130, 246] }, // Biru untuk pembeda
+                styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
+                columnStyles: { 6: { fontStyle: 'bold', textColor: [225, 29, 72] } },
+                margin: { top: 10 }
+            });
+        }
+        
         fileName = "Laporan_Stok_Akhir_Kebersihan.pdf";
         
     } else if (type === 'penggunaan') {
@@ -422,25 +478,30 @@ function generatePDF(type) {
         doc.setFontSize(9);
         doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
         
-        tableHeaders = [["Nama Barang", "Satuan", "Kru Peminjam & Detail Waktu"]];
-        inventoryData.forEach(item => {
+        const tableHeaders = [["Kategori", "Nama Barang", "Satuan", "Kru Peminjam & Detail Waktu"]];
+        let tableData = [];
+        
+        // Urutkan berdasarkan Kategori agar rapi
+        const sortedData = [...inventoryData].sort((a, b) => a.Kategori.localeCompare(b.Kategori));
+
+        sortedData.forEach(item => {
             const logs = item.Dipinjam_Oleh ? item.Dipinjam_Oleh.replace(/;/g, '\n') : '-';
             if (logs !== '-') {
-                tableData.push([ item.Nama_Barang, item.Satuan, logs ]);
+                tableData.push([ item.Kategori, item.Nama_Barang, item.Satuan, logs ]);
             }
         });
+
+        doc.autoTable({
+            startY: 50,
+            head: tableHeaders,
+            body: tableData,
+            theme: 'grid',
+            headStyles: { fillColor: [16, 185, 129] },
+            styles: { fontSize: 8, font: "helvetica", valign: 'middle' }
+        });
+        
         fileName = "Laporan_Riwayat_Penggunaan_Kebersihan.pdf";
     }
-
-    doc.autoTable({
-        startY: 50,
-        head: tableHeaders,
-        body: tableData,
-        theme: 'grid',
-        headStyles: { fillColor: [16, 185, 129] },
-        styles: { fontSize: 8, font: "helvetica", valign: 'middle' },
-        columnStyles: type === 'stok' ? { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } } : {} 
-    });
 
     doc.save(fileName);
     closeReportModal();
