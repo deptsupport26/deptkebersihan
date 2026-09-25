@@ -1,7 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxY3vUvlyDXYrYwFT9x9J7d8_PcTgrXGNAJiat2XH3l1tqLWHq8Imn_SjiP6Ey1NAH3GQ/exec";
 const APP_PIN = "KEBERSIHANOKT26";
 
-let currentViewMode = 'grid';
+let currentViewMode = 'list'; // Default sudah jadi List View
 let currentCategory = 'Semua';
 let inventoryData = [];
 let savedPin = localStorage.getItem('appPin') || '';
@@ -110,9 +110,7 @@ async function loadData() {
     } catch (err) {
         document.getElementById('loading').innerHTML = `
             <div class="text-center py-10 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
-                </div>
+                <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
                 <p class="text-slate-800 dark:text-white font-bold mb-1">Gagal Terhubung</p>
                 <button onclick="loadData()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold mt-2">Coba Muat Ulang</button>
             </div>`;
@@ -156,7 +154,6 @@ function renderData() {
     content.innerHTML = '';
     
     if (inventoryData.length === 0) return;
-    
     content.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3";
 
     inventoryData.forEach(item => {
@@ -176,14 +173,8 @@ function renderData() {
                let isKembali = log.includes("Kembali");
                let iconStatus = isKembali ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
                let colorStatus = isKembali ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
-               
-               logHTML += `
-                 <div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0">
-                    <div class="mt-0.5">${iconStatus}</div>
-                    <div>${log}</div>
-                 </div>`;
+               logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
             });
-            
             infoPeminjam = `
             <div class="mt-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg p-2.5">
                <div class="flex justify-between items-center mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">
@@ -202,36 +193,24 @@ function renderData() {
               <div class="absolute top-0 right-0 w-1.5 h-full ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'} rounded-r-2xl"></div>
               <div>
                 <div class="flex justify-between items-center text-[10px] mb-3">
-                  <span class="text-slate-500 font-bold flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
-                    <i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}
-                  </span>
+                  <span class="text-slate-500 font-bold flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
                   <div class="flex items-center gap-2">
                     <span class="font-black text-slate-300 dark:text-slate-600 uppercase tracking-wider">${item.Kategori}</span>
-                    <button onclick="openEditItemModal('${item.ID_Barang}')" class="w-6 h-6 flex items-center justify-center bg-amber-50 text-amber-500 dark:bg-amber-500/10 rounded">
-                      <i class="fa-solid fa-pen"></i>
-                    </button>
+                    <button onclick="openEditItemModal('${item.ID_Barang}')" class="w-6 h-6 flex items-center justify-center bg-amber-50 text-amber-500 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
                   </div>
                 </div>
-                
                 <div class="flex gap-3 items-start mb-2">
                    <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700">${itemIcon}</div>
                    <div>
                       <h4 class="font-extrabold text-slate-800 text-sm mb-1 pr-2 line-clamp-2">${item.Nama_Barang}</h4>
-                      <div class="flex items-baseline gap-1.5">
-                        <span class="text-lg font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
-                        <span class="text-[11px] font-bold text-slate-400">${item.Satuan || ''}</span>
-                      </div>
+                      <div class="flex items-baseline gap-1.5"><span class="text-lg font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span><span class="text-[11px] font-bold text-slate-400">${item.Satuan || ''}</span></div>
                    </div>
                 </div>
                 ${infoPeminjam}
               </div>
               <div class="flex gap-2 pt-3 mt-3 border-t border-slate-50 dark:border-slate-700/50">
-                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1, '${item.Satuan}')" class="flex-1 bg-rose-50 dark:bg-rose-500/10 text-rose-600 py-2 rounded-xl font-bold text-[11px]">
-                  <i class="fa-solid fa-minus mr-1"></i> Pakai
-                </button>
-                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1, '${item.Satuan}')" class="flex-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 py-2 rounded-xl font-bold text-[11px]">
-                  <i class="fa-solid fa-plus mr-1"></i> Kembali
-                </button>
+                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1, '${item.Satuan}')" class="flex-1 bg-rose-50 dark:bg-rose-500/10 text-rose-600 py-2 rounded-xl font-bold text-[11px]"><i class="fa-solid fa-minus mr-1"></i> Pakai</button>
+                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1, '${item.Satuan}')" class="flex-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 py-2 rounded-xl font-bold text-[11px]"><i class="fa-solid fa-plus mr-1"></i> Kembali</button>
               </div>
             </div>`;
         } else {
@@ -239,24 +218,17 @@ function renderData() {
             <div class="relative w-full rounded-2xl mb-1 overflow-hidden bg-slate-100 dark:bg-slate-800">
                <div class="absolute inset-y-0 left-0 w-1/2 flex items-center pl-5 text-emerald-600 font-black"><i class="fa-solid fa-plus mr-2"></i> KEMBALI</div>
                <div class="absolute inset-y-0 right-0 w-1/2 flex justify-end items-center pr-5 text-rose-600 font-black">PAKAI <i class="fa-solid fa-minus ml-2"></i></div>
-               
                <div class="swipe-card relative z-10 w-full bg-white dark:bg-[#1e293b] p-3 shadow-sm flex flex-col gap-2 rounded-2xl border border-slate-100 dark:border-slate-700 transition-transform duration-300" data-id="${item.ID_Barang}" data-name="${item.Nama_Barang}" data-unit="${item.Satuan}">
                   <div class="absolute top-0 left-0 h-full w-1.5 ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'} rounded-l-2xl"></div>
                   <div class="flex items-center gap-3">
                      <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 ml-1">${itemIcon}</div>
                      <div class="flex-1 min-w-0">
                        <div class="flex justify-between items-center mb-0.5">
-                         <span class="text-[10px] font-bold text-slate-500">
-                            <i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}
-                         </span>
-                         <button onclick="openEditItemModal('${item.ID_Barang}')" class="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 rounded">
-                            <i class="fa-solid fa-pen"></i>
-                         </button>
+                         <span class="text-[10px] font-bold text-slate-500"><i class="fa-solid fa-location-dot text-emerald-500"></i> ${item.Lokasi_Simpan || 'Gudang'}</span>
+                         <button onclick="openEditItemModal('${item.ID_Barang}')" class="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
                        </div>
                        <h4 class="font-bold text-slate-800 text-sm truncate mb-0.5">${item.Nama_Barang}</h4>
-                       <div class="text-sm font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">
-                         ${sisa} <span class="text-[10px] font-bold text-slate-400">${item.Satuan || ''}</span>
-                       </div>
+                       <div class="text-sm font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa} <span class="text-[10px] font-bold text-slate-400">${item.Satuan || ''}</span></div>
                      </div>
                   </div>
                   ${infoPeminjam ? `<div class="ml-16 mr-2 border-t border-slate-50 dark:border-slate-700 pt-2">${infoPeminjam}</div>` : ''}
@@ -270,41 +242,23 @@ function renderData() {
 
 function initSwipeCards() {
     document.querySelectorAll('.swipe-card').forEach(card => {
-        let startX = 0;
-        let isSwiping = false;
-        
-        card.addEventListener('touchstart', (e) => { 
-            startX = e.touches[0].clientX; 
-            isSwiping = true; 
-            card.style.transition = 'none'; 
-        }, { passive: true });
-        
+        let startX = 0; let isSwiping = false;
+        card.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isSwiping = true; card.style.transition = 'none'; }, { passive: true });
         card.addEventListener('touchmove', (e) => {
             if (!isSwiping) return; 
             let diffX = e.touches[0].clientX - startX;
             if (Math.abs(diffX) > 15) card.style.transform = `translateX(${diffX}px)`;
         }, { passive: true });
-        
         card.addEventListener('touchend', (e) => {
-            isSwiping = false; 
-            card.style.transition = 'transform 0.3s ease-out';
+            isSwiping = false; card.style.transition = 'transform 0.3s ease-out';
             let diffX = e.changedTouches[0].clientX - startX;
-            
             if (diffX > 90) { 
                 card.style.transform = `translateX(120px)`;
-                setTimeout(() => { 
-                    card.style.transform = `translateX(0)`; 
-                    openPinjamModal(card.dataset.id, card.dataset.name, -1, card.dataset.unit); 
-                }, 200);
+                setTimeout(() => { card.style.transform = `translateX(0)`; openPinjamModal(card.dataset.id, card.dataset.name, -1, card.dataset.unit); }, 200);
             } else if (diffX < -90) { 
                 card.style.transform = `translateX(-120px)`;
-                setTimeout(() => { 
-                    card.style.transform = `translateX(0)`; 
-                    openPinjamModal(card.dataset.id, card.dataset.name, 1, card.dataset.unit); 
-                }, 200);
-            } else { 
-                card.style.transform = `translateX(0)`; 
-            }
+                setTimeout(() => { card.style.transform = `translateX(0)`; openPinjamModal(card.dataset.id, card.dataset.name, 1, card.dataset.unit); }, 200);
+            } else { card.style.transform = `translateX(0)`; }
         });
     });
 }
@@ -319,10 +273,8 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
     document.getElementById('pinjamQty').value = ''; 
     document.getElementById('pinjamNamaInput').value = '';
     
-    const title = document.getElementById('pinjamTitle');
-    const icon = document.getElementById('pinjamIcon');
-    const desc = document.getElementById('pinjamDesc');
-    const btn = document.getElementById('pinjamSubmitBtn');
+    const title = document.getElementById('pinjamTitle'); const icon = document.getElementById('pinjamIcon');
+    const desc = document.getElementById('pinjamDesc'); const btn = document.getElementById('pinjamSubmitBtn');
     
     if (aksi === 1) {
         title.innerText = "Pakai Barang"; 
@@ -339,7 +291,6 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
         btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg transition-all active:scale-95 bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200 dark:shadow-none"; 
         btn.innerText = "Konfirmasi Kembali";
     }
-    
     document.getElementById('pinjamModal').classList.remove('hidden');
 }
 
@@ -352,139 +303,146 @@ async function submitPinjam(event) {
     const baseAksi = Number(document.getElementById('pinjamAksi').value); 
     const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
     
-    if (isNaN(qtyInput) || qtyInput <= 0) { 
-        alert("Jumlah barang tidak valid!"); return; 
-    }
-    
+    if (isNaN(qtyInput) || qtyInput <= 0) { alert("Jumlah barang tidak valid!"); return; }
     let namaPeminjam = document.getElementById('pinjamNamaInput').value;
-    
-    if (!namaPeminjam) { 
-        alert("Nama wajib diisi!"); return; 
-    }
+    if (!namaPeminjam) { alert("Nama wajib diisi!"); return; }
 
-    btn.innerText = "Menyimpan..."; 
-    btn.disabled = true;
+    btn.innerText = "Menyimpan..."; btn.disabled = true;
     
     try {
-        await apiRequest({ 
-            action: 'adjust_stock', 
-            id: id, 
-            change: baseAksi * qtyInput, 
-            nama: namaPeminjam 
-        });
-        
-        closePinjamModal(); 
-        showToast("Tercatat ke Master Database!"); 
-        loadData(); 
+        await apiRequest({ action: 'adjust_stock', id: id, change: baseAksi * qtyInput, nama: namaPeminjam });
+        closePinjamModal(); showToast("Tercatat ke Master Database!"); loadData(); 
     } catch(e) { 
-        if (e.message === 'PIN_SALAH') { 
-            localStorage.removeItem('appPin'); 
-            location.reload(); 
-        } else { 
-            showToast("Gagal menyimpan."); 
-            btn.disabled = false; 
-        }
+        if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+        else { showToast("Gagal menyimpan."); btn.disabled = false; }
     }
 }
 
 async function clearHistory(id, namaBarang) {
     if (!confirm(`Yakin ingin menghapus seluruh histori peminjaman untuk ${namaBarang}?`)) return;
-    
     try {
         await apiRequest({ action: 'clear_history', id: id }); 
-        showToast("Histori berhasil dibersihkan!"); 
-        loadData();
+        showToast("Histori berhasil dibersihkan!"); loadData();
     } catch(e) { 
-        if (e.message === 'PIN_SALAH') { 
-            localStorage.removeItem('appPin'); 
-            location.reload(); 
-        } else { 
-            showToast("Gagal membersihkan histori."); 
-        }
+        if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+        else { showToast("Gagal membersihkan histori."); }
     }
 }
 
 async function submitNewItem(event) {
     event.preventDefault();
-    const btn = document.getElementById('submitBtn'); 
-    btn.innerText = "Memproses..."; 
-    btn.disabled = true;
-    
+    const btn = document.getElementById('submitBtn'); btn.innerText = "Memproses..."; btn.disabled = true;
     const newItem = {
-        Nama_Barang: document.getElementById('newName').value, 
-        Kategori: document.getElementById('newCategory').value,
-        Lokasi_Simpan: document.getElementById('newLocation').value, 
-        Total_Stok: document.getElementById('newTotal').value,
-        Satuan: document.getElementById('newUnit').value, 
-        Keterangan: document.getElementById('newDesc').value
+        Nama_Barang: document.getElementById('newName').value, Kategori: document.getElementById('newCategory').value,
+        Lokasi_Simpan: document.getElementById('newLocation').value, Total_Stok: document.getElementById('newTotal').value,
+        Satuan: document.getElementById('newUnit').value, Keterangan: document.getElementById('newDesc').value
     };
-    
     try {
         await apiRequest({ action: 'create_item', item: newItem });
-        closeAddModal(); 
-        document.getElementById('addItemForm').reset(); 
-        showToast("Barang berhasil ditambah!"); 
-        loadData();
+        closeAddModal(); document.getElementById('addItemForm').reset(); showToast("Barang berhasil ditambah!"); loadData();
     } catch (e) { 
-        if (e.message === 'PIN_SALAH') { 
-            localStorage.removeItem('appPin'); 
-            location.reload(); 
-        } else { 
-            showToast("Gagal menyimpan."); 
-            btn.disabled = false; 
-            btn.innerText = "Simpan ke Master Data"; 
-        }
+        if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+        else { showToast("Gagal menyimpan."); btn.disabled = false; btn.innerText = "Simpan ke Master Data"; }
     }
 }
 
 function openEditItemModal(id) {
-    const item = inventoryData.find(i => i.ID_Barang === id); 
-    if (!item) return;
-    
-    document.getElementById('editId').value = item.ID_Barang; 
-    document.getElementById('editName').value = item.Nama_Barang;
-    document.getElementById('editCategory').value = item.Kategori; 
-    document.getElementById('editLocation').value = item.Lokasi_Simpan;
-    document.getElementById('editTotal').value = item.Total_Stok; 
-    document.getElementById('editUnit').value = item.Satuan;
-    document.getElementById('editDesc').value = item.Keterangan || ''; 
-    document.getElementById('editItemModal').classList.remove('hidden');
+    const item = inventoryData.find(i => i.ID_Barang === id); if (!item) return;
+    document.getElementById('editId').value = item.ID_Barang; document.getElementById('editName').value = item.Nama_Barang;
+    document.getElementById('editCategory').value = item.Kategori; document.getElementById('editLocation').value = item.Lokasi_Simpan;
+    document.getElementById('editTotal').value = item.Total_Stok; document.getElementById('editUnit').value = item.Satuan;
+    document.getElementById('editDesc').value = item.Keterangan || ''; document.getElementById('editItemModal').classList.remove('hidden');
 }
 
 function closeEditItemModal() { document.getElementById('editItemModal').classList.add('hidden'); }
 
 async function submitEditItem(event) {
     event.preventDefault();
-    const btn = document.getElementById('submitEditBtn'); 
-    btn.innerText = "Menyimpan..."; 
-    btn.disabled = true;
-    
+    const btn = document.getElementById('submitEditBtn'); btn.innerText = "Menyimpan..."; btn.disabled = true;
     const editedItem = {
-        Nama_Barang: document.getElementById('editName').value, 
-        Kategori: document.getElementById('editCategory').value,
-        Lokasi_Simpan: document.getElementById('editLocation').value, 
-        Total_Stok: document.getElementById('editTotal').value,
-        Satuan: document.getElementById('editUnit').value, 
-        Keterangan: document.getElementById('editDesc').value
+        Nama_Barang: document.getElementById('editName').value, Kategori: document.getElementById('editCategory').value,
+        Lokasi_Simpan: document.getElementById('editLocation').value, Total_Stok: document.getElementById('editTotal').value,
+        Satuan: document.getElementById('editUnit').value, Keterangan: document.getElementById('editDesc').value
     };
-    
     try {
-        await apiRequest({ 
-            action: 'edit_item', 
-            id: document.getElementById('editId').value, 
-            item: editedItem 
-        });
-        closeEditItemModal(); 
-        showToast("Perubahan barang disimpan!"); 
-        loadData();
+        await apiRequest({ action: 'edit_item', id: document.getElementById('editId').value, item: editedItem });
+        closeEditItemModal(); showToast("Perubahan barang disimpan!"); loadData();
     } catch (e) { 
-        if (e.message === 'PIN_SALAH') { 
-            localStorage.removeItem('appPin'); 
-            location.reload(); 
-        } else { 
-            showToast("Gagal mengedit barang."); 
-            btn.disabled = false; 
-            btn.innerText = "Update Data"; 
-        }
+        if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
+        else { showToast("Gagal mengedit barang."); btn.disabled = false; btn.innerText = "Update Data"; }
     }
+}
+
+// --- 4. FITUR LAPORAN PDF ---
+function openReportModal() { document.getElementById('reportModal').classList.remove('hidden'); }
+function closeReportModal() { document.getElementById('reportModal').classList.add('hidden'); }
+
+function generatePDF(type) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    // Header Kop Surat
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("DEPARTEMEN KEBERSIHAN", 105, 20, { align: "center" });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Pertemuan Wilayah - Oktober 2026", 105, 26, { align: "center" });
+    doc.line(14, 30, 196, 30);
+
+    let tableData = [];
+    let tableHeaders = [];
+    let fileName = "";
+    
+    if (type === 'stok') {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("LAPORAN SISA STOK AKHIR", 14, 40);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
+        
+        tableHeaders = [["ID Barang", "Nama Barang", "Lokasi", "Total Awal", "Sedang Dipakai", "SISA AKHIR"]];
+        inventoryData.forEach(item => {
+            tableData.push([
+                item.ID_Barang, item.Nama_Barang, item.Lokasi_Simpan, 
+                `${item.Total_Stok} ${item.Satuan}`, 
+                `${item.Sedang_Dipakai} ${item.Satuan}`, 
+                `${item.Sisa_Stok} ${item.Satuan}`
+            ]);
+        });
+        fileName = "Laporan_Stok_Akhir_Kebersihan.pdf";
+        
+    } else if (type === 'penggunaan') {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("LAPORAN RIWAYAT PENGGUNAAN BARANG", 14, 40);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
+        
+        tableHeaders = [["Nama Barang", "Satuan", "Kru Peminjam & Detail Waktu"]];
+        inventoryData.forEach(item => {
+            const logs = item.Dipinjam_Oleh ? item.Dipinjam_Oleh.replace(/;/g, '\n') : '-';
+            if (logs !== '-') {
+                tableData.push([ item.Nama_Barang, item.Satuan, logs ]);
+            }
+        });
+        fileName = "Laporan_Riwayat_Penggunaan_Kebersihan.pdf";
+    }
+
+    doc.autoTable({
+        startY: 50,
+        head: tableHeaders,
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [16, 185, 129] },
+        styles: { fontSize: 8, font: "helvetica", valign: 'middle' },
+        columnStyles: type === 'stok' ? { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } } : {} 
+    });
+
+    doc.save(fileName);
+    closeReportModal();
+    showToast("PDF Berhasil Diunduh!");
 }
