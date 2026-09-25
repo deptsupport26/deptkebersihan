@@ -297,24 +297,49 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
 function closePinjamModal() { document.getElementById('pinjamModal').classList.add('hidden'); }
 
 async function submitPinjam(event) {
-    event.preventDefault();
-    const btn = document.getElementById('pinjamSubmitBtn'); 
-    const id = document.getElementById('pinjamItemId').value;
-    const baseAksi = Number(document.getElementById('pinjamAksi').value); 
-    const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
+    if (event) event.preventDefault();
     
-    if (isNaN(qtyInput) || qtyInput <= 0) { alert("Jumlah barang tidak valid!"); return; }
-    let namaPeminjam = document.getElementById('pinjamNamaInput').value;
-    if (!namaPeminjam) { alert("Nama wajib diisi!"); return; }
-
-    btn.innerText = "Menyimpan..."; btn.disabled = true;
+    const btn = document.getElementById('pinjamSubmitBtn'); 
+    const baseAksi = Number(document.getElementById('pinjamAksi').value); 
     
     try {
-        await apiRequest({ action: 'adjust_stock', id: id, change: baseAksi * qtyInput, nama: namaPeminjam });
-        closePinjamModal(); showToast("Tercatat ke Master Database!"); loadData(); 
+        const id = document.getElementById('pinjamItemId').value;
+        const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
+        
+        // Validasi Manual (Lebih aman dari bug browser)
+        if (isNaN(qtyInput) || qtyInput <= 0) { 
+            showToast("Gagal: Jumlah barang tidak valid!"); 
+            return; 
+        }
+        
+        let namaPeminjam = document.getElementById('pinjamNamaInput').value;
+        if (!namaPeminjam || !namaPeminjam.trim()) { 
+            showToast("Gagal: Nama Kru wajib diisi!"); 
+            return; 
+        }
+
+        btn.innerText = "Menyimpan..."; 
+        btn.disabled = true;
+        
+        // Kirim ke server
+        await apiRequest({ action: 'adjust_stock', id: id, change: baseAksi * qtyInput, nama: namaPeminjam.trim() });
+        
+        closePinjamModal(); 
+        showToast("Tercatat ke Master Database!"); 
+        loadData(); 
+        
     } catch(e) { 
-        if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
-        else { showToast("Gagal menyimpan."); btn.disabled = false; }
+        if (e && e.message === 'PIN_SALAH') { 
+            localStorage.removeItem('appPin'); 
+            location.reload(); 
+        } else { 
+            // Munculkan toast error jika gagal internet/server
+            showToast(e.message || "Gagal menyimpan data."); 
+        }
+    } finally {
+        // GARANSI tombol selalu menyala kembali meski terjadi error tersembunyi
+        btn.disabled = false; 
+        btn.innerText = baseAksi === 1 ? "Konfirmasi Pakai" : "Konfirmasi Kembali";
     }
 }
 
