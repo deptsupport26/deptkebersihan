@@ -170,11 +170,14 @@ function renderData() {
             let logHTML = '';
             const logs = dipinjamOlehRaw.split(';').map(l => l.trim()).filter(l => l);
             logs.forEach(log => {
-               let isKembali = log.includes("Kembali");
-               let iconStatus = isKembali ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
-               let colorStatus = isKembali ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
-               logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
-            });
+           // HANYA HIJAU JIKA ADA KATA LUNAS (ATAU KEMBALI MURNI TANPA PINJAM)
+           let isLunas = log.includes("LUNAS") || (log.includes("Kembali") && !log.includes("Pinjam"));
+           
+           let iconStatus = isLunas ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
+           let colorStatus = isLunas ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
+           
+           logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
+        });
             infoPeminjam = `
             <div class="mt-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg p-2.5">
                <div class="flex justify-between items-center mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">
