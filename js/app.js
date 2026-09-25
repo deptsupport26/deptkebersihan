@@ -401,14 +401,15 @@ function generatePDF(type) {
         doc.setFontSize(9);
         doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
         
-        const tableHeaders = [["ID Barang", "Nama Barang", "Keterangan", "Lokasi", "Total", "Dipakai", "SISA"]];
+        // ID Barang dihapus dari header
+        const tableHeaders = [["Nama Barang", "Keterangan", "Lokasi", "Total", "Dipakai", "SISA"]];
         let alatData = [];
         let habisPakaiData = [];
 
         // Pisahkan data berdasarkan kategori
         inventoryData.forEach(item => {
+            // ID Barang tidak lagi dimasukkan ke dalam baris data
             const rowData = [
-                item.ID_Barang, 
                 item.Nama_Barang, 
                 item.Keterangan || '-', 
                 item.Lokasi_Simpan, 
@@ -430,7 +431,7 @@ function generatePDF(type) {
         if (alatData.length > 0) {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
-            doc.setTextColor(16, 185, 129); // Emerald color
+            doc.setTextColor(16, 185, 129); // Warna hijau
             doc.text("KATEGORI: ALAT / SABUN", 14, currentY);
             
             doc.autoTable({
@@ -440,7 +441,7 @@ function generatePDF(type) {
                 theme: 'grid',
                 headStyles: { fillColor: [16, 185, 129] },
                 styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
-                columnStyles: { 6: { fontStyle: 'bold', textColor: [225, 29, 72] } }, // Kolom Sisa merah
+                columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, // Index 5 adalah kolom "SISA"
                 margin: { top: 10 }
             });
             currentY = doc.lastAutoTable.finalY + 10;
@@ -448,12 +449,12 @@ function generatePDF(type) {
 
         // Tabel 2: Habis Pakai
         if (habisPakaiData.length > 0) {
-            // Cek jika halaman tidak muat, buat halaman baru
+            // Cek jika halaman tidak muat, pindah ke halaman baru
             if (currentY > 250) { doc.addPage(); currentY = 20; }
             
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
-            doc.setTextColor(59, 130, 246); // Blue color
+            doc.setTextColor(59, 130, 246); // Warna biru
             doc.text("KATEGORI: HABIS PAKAI", 14, currentY);
             
             doc.autoTable({
@@ -461,9 +462,9 @@ function generatePDF(type) {
                 head: tableHeaders,
                 body: habisPakaiData,
                 theme: 'grid',
-                headStyles: { fillColor: [59, 130, 246] }, // Biru untuk pembeda
+                headStyles: { fillColor: [59, 130, 246] },
                 styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
-                columnStyles: { 6: { fontStyle: 'bold', textColor: [225, 29, 72] } },
+                columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, // Index 5 adalah kolom "SISA"
                 margin: { top: 10 }
             });
         }
@@ -481,7 +482,6 @@ function generatePDF(type) {
         const tableHeaders = [["Kategori", "Nama Barang", "Satuan", "Kru Peminjam & Detail Waktu"]];
         let tableData = [];
         
-        // Urutkan berdasarkan Kategori agar rapi
         const sortedData = [...inventoryData].sort((a, b) => a.Kategori.localeCompare(b.Kategori));
 
         sortedData.forEach(item => {
