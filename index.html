@@ -9,14 +9,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍃</text></svg>">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { darkbg: '#0f172a', darkcard: '#1e293b' } } } }
   </script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Library untuk Export PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { transition: background-color 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+    body { transition: background-color 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; overflow-x: hidden; }
     .dark body { background-color: #0f172a; color: #f8fafc; }
     .dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
     .dark .text-slate-800 { color: #f8fafc !important; }
@@ -25,13 +31,12 @@
     .dark .border-slate-100, .dark .border-slate-200 { border-color: #334155 !important; }
     .dark #pinjamModal .bg-slate-50, .dark #addModal .bg-slate-50, .dark #editItemModal .bg-slate-50 { background-color: #334155 !important; }
     .dark input, .dark select { background-color: #0f172a !important; color: #f8fafc !important; }
-    body { overflow-x: hidden; }
     .swipe-card { touch-action: pan-y; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-emerald-200">
 
-  <!-- Layar Login Awal (Layar Penuh, Z-Index Tertinggi) -->
+  <!-- Layar Login Awal -->
   <div id="pinModal" class="fixed inset-0 bg-slate-900/95 backdrop-blur-lg z-[100] hidden flex flex-col items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl transform transition-all text-center dark:bg-[#1e293b]">
       <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner"><i class="fa-solid fa-shield-halved"></i></div>
@@ -55,12 +60,13 @@
       <div class="flex items-start gap-3">
         <div class="bg-emerald-100 text-emerald-600 p-2.5 rounded-xl mt-1"><i class="fa-solid fa-leaf text-xl"></i></div>
         <div>
-          <h1 class="text-lg font-extrabold text-slate-800 tracking-tight">Departemen Kebersihan</h1>
+          <h1 class="text-lg font-extrabold text-slate-800 tracking-tight">Dept. Kebersihan</h1>
           <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Pertemuan Wilayah 3 Oktober 2026</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-yellow-400 hover:bg-slate-200 transition-all shrink-0"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
+        <button onclick="openReportModal()" class="hidden md:flex w-auto px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md shadow-indigo-200 transition-all active:scale-95 items-center justify-center gap-1.5 h-10"><i class="fa-solid fa-file-pdf"></i> <span>Laporan</span></button>
         <button onclick="openAddModal()" class="hidden md:flex w-auto px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-200 transition-all active:scale-95 items-center justify-center gap-1.5 h-10"><i class="fa-solid fa-plus"></i> <span>Tambah</span></button>
       </div>
     </div>
@@ -74,8 +80,8 @@
           <input type="text" id="search" oninput="renderData()" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 block w-full pl-10 p-3 outline-none" placeholder="Cari barang, box...">
         </div>
         <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl shrink-0 gap-1 items-center transition-colors">
-          <button onclick="setViewMode('grid')" id="btnGridView" class="w-10 h-10 rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm"><i class="fa-solid fa-border-all"></i></button>
-          <button onclick="setViewMode('list')" id="btnListView" class="w-10 h-10 rounded-lg text-sm font-bold text-slate-400"><i class="fa-solid fa-list-ul"></i></button>
+          <button onclick="setViewMode('list')" id="btnListView" class="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all"><i class="fa-solid fa-list-ul"></i></button>
+          <button onclick="setViewMode('grid')" id="btnGridView" class="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold text-slate-400 hover:text-slate-600 transition-all dark:bg-slate-800"><i class="fa-solid fa-border-all"></i></button>
         </div>
       </div>
       <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -92,7 +98,11 @@
     <div id="content" class="space-y-4"></div>
   </main>
 
-  <button onclick="openAddModal()" class="md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-[0_8px_30px_rgb(16,185,129,0.5)] flex items-center justify-center text-xl transition-transform active:scale-90"><i class="fa-solid fa-plus"></i></button>
+  <!-- Tombol Melayang Mobile -->
+  <div class="md:hidden fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
+    <button onclick="openReportModal()" class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-[0_8px_30px_rgb(79,70,229,0.5)] flex items-center justify-center text-lg transition-transform active:scale-90"><i class="fa-solid fa-file-pdf"></i></button>
+    <button onclick="openAddModal()" class="w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-[0_8px_30px_rgb(16,185,129,0.5)] flex items-center justify-center text-xl transition-transform active:scale-90"><i class="fa-solid fa-plus"></i></button>
+  </div>
 
   <!-- Modal Peminjaman -->
   <div id="pinjamModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -132,7 +142,7 @@
         </div>
         <button onclick="closeAddModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <form onsubmit="submitNewItem(event)" class="space-y-4">
+      <form onsubmit="submitNewItem(event)" class="space-y-4" id="addItemForm">
         <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Nama Barang</label><input type="text" id="newName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"></div>
         <div class="grid grid-cols-2 gap-3">
           <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label><select id="newCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-emerald-500 outline-none"><option value="Alat / Sabun">Alat / Sabun</option><option value="Habis Pakai">Habis Pakai</option></select></div>
@@ -172,6 +182,30 @@
         <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label><input type="text" id="editDesc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:border-amber-500 outline-none"></div>
         <div class="pt-2"><button type="submit" id="submitEditBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Update Data</button></div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Export Laporan -->
+  <div id="reportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl transform transition-all dark:bg-[#1e293b]">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-indigo-100 text-indigo-600 text-xl"><i class="fa-solid fa-file-pdf"></i></div>
+          <h3 class="text-base font-extrabold text-slate-800">Cetak Laporan</h3>
+        </div>
+        <button onclick="closeReportModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-sm text-slate-600 mb-5 leading-relaxed">Pilih jenis laporan yang ingin Anda unduh ke format PDF.</p>
+      <div class="space-y-3">
+        <button onclick="generatePDF('stok')" class="w-full text-left bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 p-4 rounded-xl flex items-center gap-4 transition-colors group dark:hover:bg-indigo-900/20">
+           <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition-colors dark:bg-slate-800"><i class="fa-solid fa-boxes-stacked"></i></div>
+           <div><h4 class="font-bold text-slate-800 text-sm">Laporan Stok Akhir</h4><p class="text-[10px] text-slate-500">Sisa barang & barang belum kembali</p></div>
+        </button>
+        <button onclick="generatePDF('penggunaan')" class="w-full text-left bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 p-4 rounded-xl flex items-center gap-4 transition-colors group dark:hover:bg-indigo-900/20">
+           <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition-colors dark:bg-slate-800"><i class="fa-solid fa-users-viewfinder"></i></div>
+           <div><h4 class="font-bold text-slate-800 text-sm">Laporan Penggunaan</h4><p class="text-[10px] text-slate-500">Detail kru yang memakai barang</p></div>
+        </button>
+      </div>
     </div>
   </div>
 
