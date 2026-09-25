@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Panduan - Dept. Kebersihan</title>
+  <title>Panduan Lengkap - Dept. Kebersihan</title>
   <meta name="theme-color" content="#10b981">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
@@ -15,12 +15,13 @@
     .dark .text-slate-800 { color: #f8fafc !important; }
     .dark .text-slate-500 { color: #94a3b8 !important; }
     .dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; }
+    .dark .border-slate-100 { border-color: #334155 !important; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased pb-10">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased pb-10 selection:bg-emerald-200">
 
   <!-- Header dengan Tombol Kembali -->
-  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200 px-4 py-4 dark:bg-[#1e293b]/90 dark:border-slate-700">
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200 px-4 py-4 dark:bg-[#1e293b]/90 dark:border-slate-700 transition-colors">
     <div class="max-w-2xl mx-auto flex items-center gap-4">
       <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all dark:bg-slate-800 dark:text-slate-300">
         <i class="fa-solid fa-arrow-left"></i>
@@ -32,50 +33,87 @@
     </div>
   </header>
 
-  <main class="p-4 max-w-2xl mx-auto space-y-4 mt-2">
-    <!-- Poin 1 -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-mobile-screen"></i></div>
-        <h3 class="font-bold text-slate-800 text-md">1. Cara Pasang di HP (PWA)</h3>
+  <main class="p-4 max-w-2xl mx-auto space-y-5 mt-2">
+    
+    <!-- Poin 1: PWA -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700 transition-colors">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">1. Jadikan Aplikasi di HP (PWA)</h3>
       </div>
-      <p class="text-sm text-slate-500 leading-relaxed mb-2">Aplikasi ini bisa diinstal tanpa lewat PlayStore agar lebih ringan dan cepat:</p>
-      <ul class="text-sm text-slate-500 list-disc pl-5 space-y-1">
-        <li>Buka web di Google Chrome (Android) atau Safari (iPhone).</li>
-        <li>Pilih menu opsi (titik tiga / tombol share).</li>
-        <li>Pilih <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong>.</li>
+      <p class="text-sm text-slate-500 leading-relaxed mb-3">Sistem ini didesain sangat ringan dan tidak akan memenuhi memori HP Anda. Agar mudah dibuka sewaktu-waktu tanpa harus mengetik alamat web lagi, ikuti cara ini:</p>
+      <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+        <p class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"><i class="fa-brands fa-android text-emerald-500 mr-1"></i> Pengguna Android (Chrome):</p>
+        <p class="text-xs text-slate-500 mb-3">Klik ikon <strong>Titik Tiga</strong> di pojok kanan atas browser &raquo; Cari dan pilih <strong>"Tambahkan ke Layar Utama"</strong> (Add to Home screen) &raquo; Klik Instal.</p>
+        
+        <p class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1"><i class="fa-brands fa-apple text-slate-400 mr-1"></i> Pengguna iPhone (Safari):</p>
+        <p class="text-xs text-slate-500">Klik ikon <strong>Share</strong> (kotak dengan panah ke atas) di menu bawah &raquo; Geser ke bawah dan pilih <strong>"Add to Home Screen"</strong> &raquo; Klik Add di pojok kanan atas.</p>
+      </div>
+    </div>
+
+    <!-- Poin 2: Geser Tinder -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700 transition-colors">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 bg-rose-100 text-rose-500 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-hand-pointer"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">2. Cara Catat Pakai / Kembali</h3>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed mb-3">Ini adalah fitur utama untuk mencatat barang keluar-masuk. Di tampilan <strong>Daftar Baris (ikon bergaris di kanan pencarian)</strong>, Anda bisa mencatat dengan sangat cepat:</p>
+      <ul class="text-sm text-slate-500 list-none space-y-3">
+        <li class="flex items-start gap-2">
+          <i class="fa-solid fa-arrow-left mt-1 text-rose-500"></i>
+          <span><strong>Untuk MEMAKAI Barang:</strong> <br>Letakkan jari Anda di kotak barang, lalu <strong>geser (swipe) ke arah KIRI</strong>. Kotak warna merah akan muncul.</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <i class="fa-solid fa-arrow-right mt-1 text-emerald-500"></i>
+          <span><strong>Untuk MENGEMBALIKAN Barang:</strong> <br>Letakkan jari Anda di kotak barang, lalu <strong>geser (swipe) ke arah KANAN</strong>. Kotak warna hijau akan muncul.</span>
+        </li>
+      </ul>
+      <p class="text-xs text-slate-400 mt-4 italic">*Catatan: Setelah digeser, akan muncul konfirmasi berapa jumlah yang dipakai/dikembalikan beserta nama kru peminjamnya.</p>
+    </div>
+
+    <!-- Poin 3: Pull to Refresh -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700 transition-colors">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 bg-sky-100 text-sky-500 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-arrow-down-long"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">3. Sinkronisasi Data (Refresh)</h3>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed">Jika Anda ingin memastikan data stok yang tampil di layar Anda adalah versi yang paling terbaru (mungkin baru saja di-update oleh petugas lain di tempat berbeda), Anda cukup <strong>menarik layar ke bawah (Pull-to-Refresh)</strong> secara penuh hingga muncul tulisan "Memuat Ulang..." di bagian atas.</p>
+    </div>
+
+    <!-- Poin 4: Bersihkan Histori -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700 transition-colors">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 bg-amber-100 text-amber-500 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-eraser"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">4. Menghapus Log Riwayat (Bersihkan)</h3>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed mb-3">Setiap barang yang sedang dipinjam akan memunculkan kotak "Log Histori" di bawah namanya. Jika kru sudah mengembalikan barang tersebut namun namanya masih tertera di situ:</p>
+      <p class="text-sm text-slate-500 leading-relaxed">Klik tombol <strong>"Bersihkan"</strong> warna merah muda di pojok kanan log tersebut. Ini akan mereset histori peminjaman untuk barang itu sekaligus menormalkan kembali sisa stoknya ke jumlah awal.</p>
+    </div>
+
+    <!-- Poin 5: Laporan -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700 transition-colors">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 bg-indigo-100 text-indigo-500 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-file-pdf"></i></div>
+        <h3 class="font-bold text-slate-800 text-md">5. Cetak Laporan Evaluasi (PDF)</h3>
+      </div>
+      <p class="text-sm text-slate-500 leading-relaxed">Untuk merekap akhir acara, klik tombol <strong>Laporan (Ikon PDF)</strong>. Anda bisa mengunduh 2 jenis laporan siap print:</p>
+      <ul class="text-sm text-slate-500 list-decimal pl-5 space-y-1 mt-2">
+        <li><strong>Stok Akhir:</strong> Melihat daftar lengkap seluruh sisa barang (untuk mengecek barang mana yang alatnya hilang/habis).</li>
+        <li><strong>Riwayat Penggunaan:</strong> Melihat rekam jejak kru mana saja yang paling sering memakai/meminjam alat selama acara berlangsung.</li>
       </ul>
     </div>
 
-    <!-- Poin 2 -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 bg-rose-100 text-rose-500 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-hand-pointer"></i></div>
-        <h3 class="font-bold text-slate-800 text-md">2. Cara Cepat Pakai/Kembali Barang</h3>
-      </div>
-      <p class="text-sm text-slate-500 leading-relaxed mb-2">Dalam tampilan <strong>Mode List</strong> (Daftar Baris), Anda bisa menggunakan fitur geser (swipe):</p>
-      <ul class="text-sm text-slate-500 list-disc pl-5 space-y-1">
-        <li>Geser barang ke <strong>Kiri</strong> untuk <strong>Memakai</strong> barang.</li>
-        <li>Geser barang ke <strong>Kanan</strong> untuk <strong>Mengembalikan</strong> barang.</li>
-      </ul>
-    </div>
-
-    <!-- Poin 3 -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 dark:bg-[#1e293b] dark:border-slate-700">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 bg-indigo-100 text-indigo-500 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-file-pdf"></i></div>
-        <h3 class="font-bold text-slate-800 text-md">3. Cetak Laporan Evaluasi</h3>
-      </div>
-      <p class="text-sm text-slate-500 leading-relaxed">Gunakan tombol <strong>Laporan (PDF)</strong> di atas atau pojok kanan bawah. Terdapat dua jenis PDF: Stok Akhir (untuk cek barang yang hilang/habis) dan Penggunaan (untuk melacak siapa yang meminjam barang).</p>
-    </div>
   </main>
 
-  <div class="px-4 max-w-2xl mx-auto mt-6">
-     <a href="index.html" class="block w-full bg-slate-800 hover:bg-slate-900 text-white text-center font-bold py-4 rounded-xl text-sm shadow-lg active:scale-95 transition-all dark:bg-slate-700">Kembali ke Beranda</a>
+  <!-- Tombol Kembali -->
+  <div class="px-4 max-w-2xl mx-auto mt-6 mb-4">
+     <a href="index.html" class="flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-xl text-sm shadow-lg active:scale-95 transition-all dark:bg-slate-700">
+        <i class="fa-solid fa-house"></i> Kembali ke Beranda
+     </a>
   </div>
 
   <script>
-    // Menyamakan Dark Mode dengan sistem sebelumnya
+    // Mempertahankan tema gelap/terang secara mulus
     if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     }
