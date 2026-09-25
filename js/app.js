@@ -8,6 +8,14 @@ let savedPin = localStorage.getItem('appPin') || '';
 
 // --- 1. LOGIN SCREEN LOGIC ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Sesuaikan ikon tema saat web pertama dibuka
+    const icon = document.getElementById('themeIcon');
+    if (document.documentElement.classList.contains('dark')) {
+        if(icon) icon.className = 'fa-solid fa-sun text-yellow-400';
+    } else {
+        if(icon) icon.className = 'fa-solid fa-moon';
+    }
+
     if (savedPin === APP_PIN) {
         loadData();
     } else {
@@ -73,10 +81,12 @@ function toggleDarkMode() {
     const icon = document.getElementById('themeIcon');
     if (html.classList.contains('dark')) {
         html.classList.remove('dark');
-        icon.className = 'fa-solid fa-moon';
+        if(icon) icon.className = 'fa-solid fa-moon';
+        localStorage.setItem('theme', 'light');
     } else {
         html.classList.add('dark');
-        icon.className = 'fa-solid fa-sun text-yellow-400';
+        if(icon) icon.className = 'fa-solid fa-sun text-yellow-400';
+        localStorage.setItem('theme', 'dark');
     }
 }
 
@@ -156,14 +166,14 @@ function renderData() {
     if (inventoryData.length === 0) return;
     content.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3";
 
-inventoryData.forEach(item => {
+    inventoryData.forEach(item => {
         const values = Object.values(item).join(' ').toLowerCase();
         if (!values.includes(keyword)) return;
         if (currentCategory !== 'Semua' && item.Kategori !== currentCategory) return;
 
         const sisa = Number(item.Sisa_Stok) || 0;
         const total = Number(item.Total_Stok) || 0;
-        const dipakai = Number(item.Sedang_Dipakai) || 0; // Tarik data Sedang Dipakai
+        const dipakai = Number(item.Sedang_Dipakai) || 0; 
         const dipinjamOlehRaw = item.Dipinjam_Oleh || ''; 
         let infoPeminjam = '';
         
@@ -171,7 +181,6 @@ inventoryData.forEach(item => {
             let logHTML = '';
             const logs = dipinjamOlehRaw.split(';').map(l => l.trim()).filter(l => l);
             logs.forEach(log => {
-               // Logika warna sederhana: Pinjam = Oranye, Kembali = Hijau (Lunas atau Parsial tidak peduli)
                let isKembali = log.includes("Kembali");
                let iconStatus = isKembali ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
                let colorStatus = isKembali ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
@@ -188,8 +197,6 @@ inventoryData.forEach(item => {
         }
 
         const itemIcon = getItemIcon(item.Nama_Barang);
-
-        // INDIKATOR BARU: Badge "Dipinjam: X" jika ada barang yang nyangkut di luar
         const badgeDipakai = dipakai > 0 ? `<span class="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 px-2 py-0.5 rounded-md ml-2">Dipinjam: ${dipakai}</span>` : '';
 
         if (currentViewMode === 'grid') {
@@ -208,8 +215,10 @@ inventoryData.forEach(item => {
                    <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700">${itemIcon}</div>
                    <div>
                       <h4 class="font-extrabold text-slate-800 text-sm mb-1 pr-2 line-clamp-2">${item.Nama_Barang}</h4>
-                      <div class="flex items-center flex-wrap gap-y-1">
-                        <span class="text-lg font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
+                      <div class="flex items-center flex-wrap gap-y-1 mt-1">
+                        <span class="text-xl font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
+                        <span class="text-sm font-bold text-slate-400 mx-1.5">/</span>
+                        <span class="text-sm font-bold text-slate-500">${total}</span>
                         <span class="text-[11px] font-bold text-slate-400 ml-1.5">${item.Satuan || ''}</span>
                         ${badgeDipakai}
                       </div>
@@ -237,9 +246,11 @@ inventoryData.forEach(item => {
                          <button onclick="openEditItemModal('${item.ID_Barang}')" class="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
                        </div>
                        <h4 class="font-bold text-slate-800 text-sm truncate mb-0.5">${item.Nama_Barang}</h4>
-                       <div class="flex items-center flex-wrap gap-y-1">
-                         <span class="text-sm font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
-                         <span class="text-[10px] font-bold text-slate-400 ml-1">${item.Satuan || ''}</span>
+                       <div class="flex items-center flex-wrap gap-y-1 mt-1">
+                         <span class="text-base font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
+                         <span class="text-xs font-bold text-slate-400 mx-1">/</span>
+                         <span class="text-xs font-bold text-slate-500">${total}</span>
+                         <span class="text-[10px] font-bold text-slate-400 ml-1.5">${item.Satuan || ''}</span>
                          ${badgeDipakai}
                        </div>
                      </div>
@@ -319,7 +330,6 @@ async function submitPinjam(event) {
         const id = document.getElementById('pinjamItemId').value;
         const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
         
-        // Validasi Manual (Lebih aman dari bug browser)
         if (isNaN(qtyInput) || qtyInput <= 0) { 
             showToast("Gagal: Jumlah barang tidak valid!"); 
             return; 
@@ -334,7 +344,6 @@ async function submitPinjam(event) {
         btn.innerText = "Menyimpan..."; 
         btn.disabled = true;
         
-        // Kirim ke server
         await apiRequest({ action: 'adjust_stock', id: id, change: baseAksi * qtyInput, nama: namaPeminjam.trim() });
         
         closePinjamModal(); 
@@ -346,11 +355,9 @@ async function submitPinjam(event) {
             localStorage.removeItem('appPin'); 
             location.reload(); 
         } else { 
-            // Munculkan toast error jika gagal internet/server
             showToast(e.message || "Gagal menyimpan data."); 
         }
     } finally {
-        // GARANSI tombol selalu menyala kembali meski terjadi error tersembunyi
         btn.disabled = false; 
         btn.innerText = baseAksi === 1 ? "Konfirmasi Pakai" : "Konfirmasi Kembali";
     }
@@ -420,7 +427,6 @@ function generatePDF(type) {
     const doc = new jsPDF();
     const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
-    // Header Kop Surat
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.text("DEPARTEMEN KEBERSIHAN", 105, 20, { align: "center" });
@@ -439,14 +445,11 @@ function generatePDF(type) {
         doc.setFontSize(9);
         doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
         
-        // ID Barang dihapus dari header
         const tableHeaders = [["Nama Barang", "Keterangan", "Lokasi", "Total", "Dipakai", "SISA"]];
         let alatData = [];
         let habisPakaiData = [];
 
-        // Pisahkan data berdasarkan kategori
         inventoryData.forEach(item => {
-            // ID Barang tidak lagi dimasukkan ke dalam baris data
             const rowData = [
                 item.Nama_Barang, 
                 item.Keterangan || '-', 
@@ -465,11 +468,10 @@ function generatePDF(type) {
 
         let currentY = 50;
 
-        // Tabel 1: Alat / Sabun
         if (alatData.length > 0) {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
-            doc.setTextColor(16, 185, 129); // Warna hijau
+            doc.setTextColor(16, 185, 129); 
             doc.text("KATEGORI: ALAT / SABUN", 14, currentY);
             
             doc.autoTable({
@@ -479,20 +481,18 @@ function generatePDF(type) {
                 theme: 'grid',
                 headStyles: { fillColor: [16, 185, 129] },
                 styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
-                columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, // Index 5 adalah kolom "SISA"
+                columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, 
                 margin: { top: 10 }
             });
             currentY = doc.lastAutoTable.finalY + 10;
         }
 
-        // Tabel 2: Habis Pakai
         if (habisPakaiData.length > 0) {
-            // Cek jika halaman tidak muat, pindah ke halaman baru
             if (currentY > 250) { doc.addPage(); currentY = 20; }
             
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
-            doc.setTextColor(59, 130, 246); // Warna biru
+            doc.setTextColor(59, 130, 246); 
             doc.text("KATEGORI: HABIS PAKAI", 14, currentY);
             
             doc.autoTable({
@@ -502,7 +502,7 @@ function generatePDF(type) {
                 theme: 'grid',
                 headStyles: { fillColor: [59, 130, 246] },
                 styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
-                columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, // Index 5 adalah kolom "SISA"
+                columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, 
                 margin: { top: 10 }
             });
         }
