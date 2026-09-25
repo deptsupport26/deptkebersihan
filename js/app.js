@@ -156,13 +156,14 @@ function renderData() {
     if (inventoryData.length === 0) return;
     content.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3";
 
-    inventoryData.forEach(item => {
+inventoryData.forEach(item => {
         const values = Object.values(item).join(' ').toLowerCase();
         if (!values.includes(keyword)) return;
         if (currentCategory !== 'Semua' && item.Kategori !== currentCategory) return;
 
         const sisa = Number(item.Sisa_Stok) || 0;
         const total = Number(item.Total_Stok) || 0;
+        const dipakai = Number(item.Sedang_Dipakai) || 0; // Tarik data Sedang Dipakai
         const dipinjamOlehRaw = item.Dipinjam_Oleh || ''; 
         let infoPeminjam = '';
         
@@ -170,14 +171,12 @@ function renderData() {
             let logHTML = '';
             const logs = dipinjamOlehRaw.split(';').map(l => l.trim()).filter(l => l);
             logs.forEach(log => {
-           // HANYA HIJAU JIKA ADA KATA LUNAS (ATAU KEMBALI MURNI TANPA PINJAM)
-           let isLunas = log.includes("LUNAS") || (log.includes("Kembali") && !log.includes("Pinjam"));
-           
-           let iconStatus = isLunas ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
-           let colorStatus = isLunas ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
-           
-           logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
-        });
+               // Logika warna sederhana: Pinjam = Oranye, Kembali = Hijau (Lunas atau Parsial tidak peduli)
+               let isKembali = log.includes("Kembali");
+               let iconStatus = isKembali ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
+               let colorStatus = isKembali ? 'text-emerald-700 dark:text-emerald-400' : 'text-orange-700 dark:text-orange-400';
+               logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 last:mb-0 leading-tight border-b border-slate-200/50 dark:border-slate-700/50 pb-1 last:border-0 last:pb-0"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
+            });
             infoPeminjam = `
             <div class="mt-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg p-2.5">
                <div class="flex justify-between items-center mb-2 border-b border-slate-100 dark:border-slate-700 pb-1">
@@ -189,6 +188,9 @@ function renderData() {
         }
 
         const itemIcon = getItemIcon(item.Nama_Barang);
+
+        // INDIKATOR BARU: Badge "Dipinjam: X" jika ada barang yang nyangkut di luar
+        const badgeDipakai = dipakai > 0 ? `<span class="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 px-2 py-0.5 rounded-md ml-2">Dipinjam: ${dipakai}</span>` : '';
 
         if (currentViewMode === 'grid') {
             content.innerHTML += `
@@ -206,7 +208,11 @@ function renderData() {
                    <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700">${itemIcon}</div>
                    <div>
                       <h4 class="font-extrabold text-slate-800 text-sm mb-1 pr-2 line-clamp-2">${item.Nama_Barang}</h4>
-                      <div class="flex items-baseline gap-1.5"><span class="text-lg font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span><span class="text-[11px] font-bold text-slate-400">${item.Satuan || ''}</span></div>
+                      <div class="flex items-center flex-wrap gap-y-1">
+                        <span class="text-lg font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
+                        <span class="text-[11px] font-bold text-slate-400 ml-1.5">${item.Satuan || ''}</span>
+                        ${badgeDipakai}
+                      </div>
                    </div>
                 </div>
                 ${infoPeminjam}
@@ -231,7 +237,11 @@ function renderData() {
                          <button onclick="openEditItemModal('${item.ID_Barang}')" class="text-amber-500 text-xs px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 rounded"><i class="fa-solid fa-pen"></i></button>
                        </div>
                        <h4 class="font-bold text-slate-800 text-sm truncate mb-0.5">${item.Nama_Barang}</h4>
-                       <div class="text-sm font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa} <span class="text-[10px] font-bold text-slate-400">${item.Satuan || ''}</span></div>
+                       <div class="flex items-center flex-wrap gap-y-1">
+                         <span class="text-sm font-black ${sisa > 0 ? 'text-emerald-500' : 'text-rose-500'}">${sisa}</span>
+                         <span class="text-[10px] font-bold text-slate-400 ml-1">${item.Satuan || ''}</span>
+                         ${badgeDipakai}
+                       </div>
                      </div>
                   </div>
                   ${infoPeminjam ? `<div class="ml-16 mr-2 border-t border-slate-50 dark:border-slate-700 pt-2">${infoPeminjam}</div>` : ''}
