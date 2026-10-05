@@ -3,6 +3,7 @@ const APP_PIN = "KEBERSIHANOKT26";
 
 let currentViewMode = 'list'; 
 let currentCategory = 'Semua';
+let currentTabStatus = 'BAWAAN'; // Default Tab V.3
 let inventoryData = [];
 let savedPin = localStorage.getItem('appPin') || '';
 
@@ -106,6 +107,15 @@ function getItemIcon(itemName) {
     return '<i class="fa-solid fa-box-open text-slate-400 text-xl"></i>';
 }
 
+function setTabStatus(status) {
+    currentTabStatus = status;
+    renderData();
+}
+
+function reportBug() {
+    window.location.href = "mailto:developer@my.id?subject=Laporan Bug Web Kebersihan";
+}
+
 // SILENT LOADING SYSTEM
 async function loadData(isSilent = false) {
     if (!isSilent) {
@@ -168,12 +178,28 @@ function renderData() {
     content.innerHTML = '';
     
     if (inventoryData.length === 0) return;
-    content.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3";
+
+    // Render Tab Menu V.3
+    const tabMenu = `
+    <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-4 shadow-inner text-sm font-bold">
+        <button onclick="setTabStatus('BAWAAN')" class="flex-1 py-2 rounded-lg transition-all ${currentTabStatus === 'BAWAAN' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow' : 'text-slate-400'}"><i class="fa-solid fa-truck-fast mr-1"></i> Bawaan Gedung</button>
+        <button onclick="setTabStatus('SEMUA')" class="flex-1 py-2 rounded-lg transition-all ${currentTabStatus === 'SEMUA' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow' : 'text-slate-400'}"><i class="fa-solid fa-warehouse mr-1"></i> Inven Master</button>
+    </div>`;
+
+    content.innerHTML = tabMenu;
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3";
+    content.appendChild(wrapper);
 
     inventoryData.forEach(item => {
         const values = Object.values(item).join(' ').toLowerCase();
         if (!values.includes(keyword)) return;
         if (currentCategory !== 'Semua' && item.Kategori !== currentCategory) return;
+
+        // Logika Filter Tab Bawaan vs Master
+        let isBawaan = item.Dibawa_Ke_Gedung === 'YA' || item.Dibawa_Ke_Gedung === true || String(item.Dibawa_Ke_Gedung).toUpperCase() === 'YA';
+        if (currentTabStatus === 'BAWAAN' && !isBawaan) return;
 
         const sisa = Number(item.Sisa_Stok) || 0;
         const total = Number(item.Total_Stok) || 0;
@@ -204,7 +230,7 @@ function renderData() {
         const badgeDipakai = dipakai > 0 ? `<span class="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 px-2 py-0.5 rounded-md ml-2">Dipinjam: ${dipakai}</span>` : '';
 
         if (currentViewMode === 'grid') {
-            content.innerHTML += `
+            wrapper.innerHTML += `
             <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm relative group dark:bg-[#1e293b]">
               <div class="absolute top-0 right-0 w-1.5 h-full ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'} rounded-r-2xl"></div>
               <div>
@@ -236,7 +262,7 @@ function renderData() {
               </div>
             </div>`;
         } else {
-            content.innerHTML += `
+            wrapper.innerHTML += `
             <div class="relative w-full rounded-2xl mb-1 overflow-hidden bg-slate-100 dark:bg-slate-800">
                <div class="absolute inset-y-0 left-0 w-1/2 flex items-center pl-5 text-emerald-600 font-black"><i class="fa-solid fa-plus mr-2"></i> KEMBALI</div>
                <div class="absolute inset-y-0 right-0 w-1/2 flex justify-end items-center pr-5 text-rose-600 font-black">PAKAI <i class="fa-solid fa-minus ml-2"></i></div>
@@ -324,46 +350,40 @@ function openPinjamModal(id, namaBarang, aksi, satuan) {
 
 function closePinjamModal() { document.getElementById('pinjamModal').classList.add('hidden'); }
 
+// OPTIMISTIC UI: UPDATE INSTAN TANPA LOADING
 async function submitPinjam(event) {
     if (event) event.preventDefault();
     
-    const btn = document.getElementById('pinjamSubmitBtn'); 
-    const baseAksi = Number(document.getElementById('pinjamAksi').value); 
+    const id = document.getElementById('pinjamItemId').value;
+    const aksi = Number(document.getElementById('pinjamAksi').value); 
+    const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
+    const namaKru = document.getElementById('pinjamNamaInput').value;
     
-    try {
-        const id = document.getElementById('pinjamItemId').value;
-        const qtyInput = parseFloat(document.getElementById('pinjamQty').value); 
-        
-        if (isNaN(qtyInput) || qtyInput <= 0) { 
-            showToast("Gagal: Jumlah barang tidak valid!"); 
-            return; 
-        }
-        
-        let namaPeminjam = document.getElementById('pinjamNamaInput').value;
-        if (!namaPeminjam || !namaPeminjam.trim()) { 
-            showToast("Gagal: Nama Kru wajib diisi!"); 
-            return; 
-        }
+    if (isNaN(qtyInput) || qtyInput <= 0 || !namaKru || !namaKru.trim()) { 
+        showToast("Data Kru/Jumlah tidak valid!"); return; 
+    }
 
-        btn.innerText = "Menyimpan..."; 
-        btn.disabled = true;
-        
-        await apiRequest({ action: 'adjust_stock', id: id, change: baseAksi * qtyInput, nama: namaPeminjam.trim() });
-        
-        closePinjamModal(); 
-        showToast("Tercatat ke Master Database!"); 
-        loadData(true); // SILENT LOADING UPDATE
-        
+    // 1. UPDATE LOKAL SEKETIKA
+    closePinjamModal();
+    const itemIndex = inventoryData.findIndex(i => i.ID_Barang === id);
+    if(itemIndex > -1) {
+        inventoryData[itemIndex].Sedang_Dipakai = Number(inventoryData[itemIndex].Sedang_Dipakai) + (aksi * qtyInput);
+        inventoryData[itemIndex].Sisa_Stok = Number(inventoryData[itemIndex].Total_Stok) - inventoryData[itemIndex].Sedang_Dipakai;
+        renderData(); 
+        showToast("✓ Memproses di background...");
+    }
+
+    // 2. KIRIM KE BACKGROUND API
+    try {
+        await apiRequest({ action: 'adjust_stock', id: id, change: aksi * qtyInput, nama: namaKru.trim() });
+        loadData(true); // Verifikasi data beneran dari server
     } catch(e) { 
         if (e && e.message === 'PIN_SALAH') { 
-            localStorage.removeItem('appPin'); 
-            location.reload(); 
+            localStorage.removeItem('appPin'); location.reload(); 
         } else { 
-            showToast(e.message || "Gagal menyimpan data."); 
+            showToast("❌ Gagal mengirim, silakan ulangi.");
+            loadData(true); // Rollback
         }
-    } finally {
-        btn.disabled = false; 
-        btn.innerText = baseAksi === 1 ? "Konfirmasi Pakai" : "Konfirmasi Kembali";
     }
 }
 
@@ -372,7 +392,7 @@ async function clearHistory(id, namaBarang) {
     try {
         await apiRequest({ action: 'clear_history', id: id }); 
         showToast("Histori berhasil dibersihkan!"); 
-        loadData(true); // SILENT LOADING UPDATE
+        loadData(true); 
     } catch(e) { 
         if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
         else { showToast("Gagal membersihkan histori."); }
@@ -385,12 +405,13 @@ async function submitNewItem(event) {
     const newItem = {
         Nama_Barang: document.getElementById('newName').value, Kategori: document.getElementById('newCategory').value,
         Lokasi_Simpan: document.getElementById('newLocation').value, Total_Stok: document.getElementById('newTotal').value,
-        Satuan: document.getElementById('newUnit').value, Keterangan: document.getElementById('newDesc').value
+        Satuan: document.getElementById('newUnit').value, Keterangan: document.getElementById('newDesc').value,
+        Dibawa_Ke_Gedung: 'YA'
     };
     try {
         await apiRequest({ action: 'create_item', item: newItem });
         closeAddModal(); document.getElementById('addItemForm').reset(); showToast("Barang berhasil ditambah!"); 
-        loadData(true); // SILENT LOADING UPDATE
+        loadData(true); 
     } catch (e) { 
         if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
         else { showToast("Gagal menyimpan."); btn.disabled = false; btn.innerText = "Simpan ke Master Data"; }
@@ -402,7 +423,22 @@ function openEditItemModal(id) {
     document.getElementById('editId').value = item.ID_Barang; document.getElementById('editName').value = item.Nama_Barang;
     document.getElementById('editCategory').value = item.Kategori; document.getElementById('editLocation').value = item.Lokasi_Simpan;
     document.getElementById('editTotal').value = item.Total_Stok; document.getElementById('editUnit').value = item.Satuan;
-    document.getElementById('editDesc').value = item.Keterangan || ''; document.getElementById('editItemModal').classList.remove('hidden');
+    document.getElementById('editDesc').value = item.Keterangan || ''; 
+    
+    // Injeksi Tombol Hapus & Pindah Lokasi
+    let extraBtns = document.getElementById('extraEditButtons');
+    if(!extraBtns) {
+        extraBtns = document.createElement('div');
+        extraBtns.id = 'extraEditButtons';
+        extraBtns.className = "flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700";
+        document.getElementById('editItemForm').appendChild(extraBtns);
+    }
+    extraBtns.innerHTML = `
+        <button type="button" onclick="pindahLokasi('${id}')" class="flex-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-truck"></i> Pindah</button>
+        <button type="button" onclick="hapusBarang('${id}')" class="flex-1 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-trash"></i> Hapus</button>
+    `;
+    
+    document.getElementById('editItemModal').classList.remove('hidden');
 }
 
 function closeEditItemModal() { document.getElementById('editItemModal').classList.add('hidden'); }
@@ -413,16 +449,32 @@ async function submitEditItem(event) {
     const editedItem = {
         Nama_Barang: document.getElementById('editName').value, Kategori: document.getElementById('editCategory').value,
         Lokasi_Simpan: document.getElementById('editLocation').value, Total_Stok: document.getElementById('editTotal').value,
-        Satuan: document.getElementById('editUnit').value, Keterangan: document.getElementById('editDesc').value
+        Satuan: document.getElementById('editUnit').value, Keterangan: document.getElementById('editDesc').value,
+        Dibawa_Ke_Gedung: currentTabStatus === 'BAWAAN' ? 'YA' : 'TIDAK' // Asumsi sederhana
     };
     try {
         await apiRequest({ action: 'edit_item', id: document.getElementById('editId').value, item: editedItem });
         closeEditItemModal(); showToast("Perubahan barang disimpan!"); 
-        loadData(true); // SILENT LOADING UPDATE
+        loadData(true); 
     } catch (e) { 
         if (e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } 
         else { showToast("Gagal mengedit barang."); btn.disabled = false; btn.innerText = "Update Data"; }
     }
+}
+
+async function pindahLokasi(id) {
+    const newLoc = prompt("Ketik nama Box / Lokasi Baru (Misal: Box 1):");
+    if(!newLoc) return;
+    closeEditItemModal(); showToast("🚚 Memindahkan lokasi...");
+    await apiRequest({ action: 'move_item', id: id, newLocation: newLoc });
+    loadData(true);
+}
+
+async function hapusBarang(id) {
+    if(!confirm("⚠️ YAKIN INGIN MENGHAPUS BARANG INI DARI DATABASE?")) return;
+    closeEditItemModal(); showToast("🗑️ Menghapus barang...");
+    await apiRequest({ action: 'delete_item', id: id });
+    loadData(true);
 }
 
 // --- 4. FITUR LAPORAN PDF ---
@@ -430,6 +482,8 @@ function openReportModal() { document.getElementById('reportModal').classList.re
 function closeReportModal() { document.getElementById('reportModal').classList.add('hidden'); }
 
 function generatePDF(type) {
+    const isBawaanOnly = confirm("Klik 'OK' = Cetak HANYA Barang Bawaan Gedung.\nKlik 'Cancel' = Cetak SELURUH Master Inventaris.");
+    
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -439,10 +493,15 @@ function generatePDF(type) {
     doc.text("DEPARTEMEN KEBERSIHAN", 105, 20, { align: "center" });
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Pertemuan Wilayah - Oktober 2026", 105, 26, { align: "center" });
+    doc.text(`Pertemuan Wilayah - Oktober 2026 (${isBawaanOnly ? 'Gedung Saja' : 'Master'})`, 105, 26, { align: "center" });
     doc.line(14, 30, 196, 30);
 
     let fileName = "";
+    
+    let dataToPrint = inventoryData;
+    if (isBawaanOnly) {
+        dataToPrint = inventoryData.filter(i => i.Dibawa_Ke_Gedung === 'YA' || i.Dibawa_Ke_Gedung === true || String(i.Dibawa_Ke_Gedung).toUpperCase() === 'YA');
+    }
     
     if (type === 'stok') {
         doc.setFont("helvetica", "bold");
@@ -456,7 +515,7 @@ function generatePDF(type) {
         let alatData = [];
         let habisPakaiData = [];
 
-        inventoryData.forEach(item => {
+        dataToPrint.forEach(item => {
             const rowData = [
                 item.Nama_Barang, 
                 item.Keterangan || '-', 
@@ -465,27 +524,17 @@ function generatePDF(type) {
                 `${item.Sedang_Dipakai} ${item.Satuan}`, 
                 `${item.Sisa_Stok} ${item.Satuan}`
             ];
-            
-            if (item.Kategori === "Alat / Sabun") {
-                alatData.push(rowData);
-            } else {
-                habisPakaiData.push(rowData);
-            }
+            if (item.Kategori === "Alat / Sabun") { alatData.push(rowData); } 
+            else { habisPakaiData.push(rowData); }
         });
 
         let currentY = 50;
 
         if (alatData.length > 0) {
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            doc.setTextColor(16, 185, 129); 
+            doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(16, 185, 129); 
             doc.text("KATEGORI: ALAT / SABUN", 14, currentY);
-            
             doc.autoTable({
-                startY: currentY + 3,
-                head: tableHeaders,
-                body: alatData,
-                theme: 'grid',
+                startY: currentY + 3, head: tableHeaders, body: alatData, theme: 'grid',
                 headStyles: { fillColor: [16, 185, 129] },
                 styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
                 columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, 
@@ -496,25 +545,17 @@ function generatePDF(type) {
 
         if (habisPakaiData.length > 0) {
             if (currentY > 250) { doc.addPage(); currentY = 20; }
-            
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            doc.setTextColor(59, 130, 246); 
+            doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(59, 130, 246); 
             doc.text("KATEGORI: HABIS PAKAI", 14, currentY);
-            
             doc.autoTable({
-                startY: currentY + 3,
-                head: tableHeaders,
-                body: habisPakaiData,
-                theme: 'grid',
+                startY: currentY + 3, head: tableHeaders, body: habisPakaiData, theme: 'grid',
                 headStyles: { fillColor: [59, 130, 246] },
                 styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 },
                 columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, 
                 margin: { top: 10 }
             });
         }
-        
-        fileName = "Laporan_Stok_Akhir_Kebersihan.pdf";
+        fileName = `Laporan_Stok_${isBawaanOnly ? 'Gedung' : 'Semua'}_Kebersihan.pdf`;
         
     } else if (type === 'penggunaan') {
         doc.setFont("helvetica", "bold");
@@ -526,29 +567,14 @@ function generatePDF(type) {
         
         const tableHeaders = [["Kategori", "Nama Barang", "Satuan", "Kru Peminjam & Detail Waktu"]];
         let tableData = [];
-        
-        const sortedData = [...inventoryData].sort((a, b) => a.Kategori.localeCompare(b.Kategori));
+        const sortedData = [...dataToPrint].sort((a, b) => a.Kategori.localeCompare(b.Kategori));
 
         sortedData.forEach(item => {
             const logs = item.Dipinjam_Oleh ? item.Dipinjam_Oleh.replace(/;/g, '\n') : '-';
-            if (logs !== '-') {
-                tableData.push([ item.Kategori, item.Nama_Barang, item.Satuan, logs ]);
-            }
+            if (logs !== '-') { tableData.push([ item.Kategori, item.Nama_Barang, item.Satuan, logs ]); }
         });
 
         doc.autoTable({
-            startY: 50,
-            head: tableHeaders,
-            body: tableData,
-            theme: 'grid',
+            startY: 50, head: tableHeaders, body: tableData, theme: 'grid',
             headStyles: { fillColor: [16, 185, 129] },
-            styles: { fontSize: 8, font: "helvetica", valign: 'middle' }
-        });
-        
-        fileName = "Laporan_Riwayat_Penggunaan_Kebersihan.pdf";
-    }
-
-    doc.save(fileName);
-    closeReportModal();
-    showToast("PDF Berhasil Diunduh!");
-}
+            styles: { fontSize: 8, font: "
