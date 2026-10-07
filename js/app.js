@@ -577,4 +577,12 @@ function generatePDF(type) {
         doc.autoTable({
             startY: 50, head: tableHeaders, body: tableData, theme: 'grid',
             headStyles: { fillColor: [16, 185, 129] },
-            styles: { fontSize: 8, font: "
+            styles: { fontSize: 8, font: "helvetica", valign: 'middle' }
+        });
+        fileName = `Laporan_Riwayat_${isBawaanOnly ? 'Gedung' : 'Semua'}_Kebersihan.pdf`;
+    }
+
+    doc.save(fileName);
+    closeReportModal();
+    showToast("PDF Berhasil Diunduh!");
+}
