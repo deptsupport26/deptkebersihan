@@ -4,7 +4,9 @@ const APP_PIN = "KEBERSIHANOKT26";
 let currentViewMode = 'list'; 
 let currentCategory = 'Semua';
 let currentTabStatus = 'BAWAAN'; 
+let currentPage = 'inven'; 
 let inventoryData = [];
+let tugasData = []; 
 let savedPin = localStorage.getItem('appPin') || '';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -50,17 +52,36 @@ function getItemIcon(itemName) {
     return '<i class="fa-solid fa-box-open text-slate-400 text-xl"></i>';
 }
 
-function setTabStatus(status) { currentTabStatus = status; renderData(); }
+function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toastMsg').innerText = msg; t.style.transform = 'translateY(0)'; setTimeout(() => { t.style.transform = 'translateY(-150%)'; }, 3000); }
 function reportBug() { window.location.href = "mailto:developer@my.id?subject=Laporan Bug Web Kebersihan"; }
 
+// --- NAVIGASI HALAMAN BAWAH ---
+function switchPage(page) {
+    currentPage = page;
+    const pInven = document.getElementById('pageInven'); const pTugas = document.getElementById('pageTugas');
+    const nInven = document.getElementById('navInven'); const nTugas = document.getElementById('navTugas');
+    if (page === 'inven') {
+        pInven.style.display = 'block'; pTugas.style.display = 'none';
+        nInven.className = "flex flex-col items-center gap-1 text-emerald-600 transition-colors w-20"; nTugas.className = "flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 transition-colors w-20";
+        document.getElementById('headerTitle').innerText = "Dept. Kebersihan"; loadData();
+    } else {
+        pInven.style.display = 'none'; pTugas.style.display = 'block';
+        nTugas.className = "flex flex-col items-center gap-1 text-indigo-600 transition-colors w-20"; nInven.className = "flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 transition-colors w-20";
+        document.getElementById('headerTitle').innerText = "Tugas Lapangan"; loadTugasData();
+    }
+}
+
+// ============================================
+// MODUL 1: INVENTARIS
+// ============================================
+function setTabStatus(status) { currentTabStatus = status; renderData(); }
+
 async function loadData(isSilent = false) {
+    if (currentPage !== 'inven') return;
     if (!isSilent) { document.getElementById('loading').style.display = 'flex'; document.getElementById('content').innerHTML = ''; }
     try {
-        const invRes = await fetch(API_URL + "?type=inventaris");
-        const invJson = await invRes.json();
-        inventoryData = invJson.data || [];
-        document.getElementById('loading').style.display = 'none';
-        renderData();
+        const invRes = await fetch(API_URL + "?type=inventaris"); const invJson = await invRes.json();
+        inventoryData = invJson.data || []; document.getElementById('loading').style.display = 'none'; renderData();
     } catch (err) {
         if (!isSilent) document.getElementById('loading').innerHTML = `<div class="text-center py-10 bg-white rounded-2xl"><p class="text-red-500 font-bold">Gagal Terhubung</p><button onclick="loadData()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded">Muat Ulang</button></div>`;
     }
@@ -80,11 +101,8 @@ function setCategory(category, el) {
     renderData();
 }
 
-function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toastMsg').innerText = msg; t.style.transform = 'translateY(0)'; setTimeout(() => { t.style.transform = 'translateY(-150%)'; }, 3000); }
-
 function renderData() {
-    const keyword = document.getElementById('search').value.toLowerCase();
-    const content = document.getElementById('content'); content.innerHTML = '';
+    const keyword = document.getElementById('search').value.toLowerCase(); const content = document.getElementById('content'); content.innerHTML = '';
     if (inventoryData.length === 0) return;
 
     const tabMenu = `
@@ -92,37 +110,30 @@ function renderData() {
         <button onclick="setTabStatus('BAWAAN')" class="flex-1 py-2 rounded-lg transition-all ${currentTabStatus === 'BAWAAN' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow' : 'text-slate-400'}"><i class="fa-solid fa-truck-fast mr-1"></i> Akan Dibawa</button>
         <button onclick="setTabStatus('SEMUA')" class="flex-1 py-2 rounded-lg transition-all ${currentTabStatus === 'SEMUA' ? 'bg-white dark:bg-slate-700 text-emerald-600 shadow' : 'text-slate-400'}"><i class="fa-solid fa-warehouse mr-1"></i> Inven Master</button>
     </div>`;
-
-    content.innerHTML = tabMenu;
-    const wrapper = document.createElement('div');
-    wrapper.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3";
+    
+    content.innerHTML = tabMenu; 
+    const wrapper = document.createElement('div'); 
+    wrapper.className = currentViewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-3"; 
     content.appendChild(wrapper);
 
     inventoryData.forEach(item => {
         const values = Object.values(item).join(' ').toLowerCase();
         if (!values.includes(keyword)) return;
         if (currentCategory !== 'Semua' && item.Kategori !== currentCategory) return;
-
         let isBawaan = item.Dibawa_Ke_Gedung === 'YA' || item.Dibawa_Ke_Gedung === true || String(item.Dibawa_Ke_Gedung).toUpperCase() === 'YA';
         if (currentTabStatus === 'BAWAAN' && !isBawaan) return;
 
-        const sisa = Number(item.Sisa_Stok) || 0; const total = Number(item.Total_Stok) || 0; const dipakai = Number(item.Sedang_Dipakai) || 0; 
-        const dipinjamOlehRaw = item.Dipinjam_Oleh || ''; let infoPeminjam = '';
-        
+        const sisa = Number(item.Sisa_Stok) || 0; const total = Number(item.Total_Stok) || 0; const dipakai = Number(item.Sedang_Dipakai) || 0; const dipinjamOlehRaw = item.Dipinjam_Oleh || ''; let infoPeminjam = '';
         if (dipinjamOlehRaw) {
-            let logHTML = '';
-            const logs = dipinjamOlehRaw.split(';').map(l => l.trim()).filter(l => l);
+            let logHTML = ''; const logs = dipinjamOlehRaw.split(';').map(l => l.trim()).filter(l => l);
             logs.forEach(log => {
-               let isKembali = log.includes("Kembali");
-               let iconStatus = isKembali ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>';
-               let colorStatus = isKembali ? 'text-emerald-700' : 'text-orange-700';
+               let isKembali = log.includes("Kembali"); let iconStatus = isKembali ? '<i class="fa-solid fa-box-archive text-emerald-500"></i>' : '<i class="fa-solid fa-hand-holding-hand text-orange-500"></i>'; let colorStatus = isKembali ? 'text-emerald-700' : 'text-orange-700';
                logHTML += `<div class="text-[10px] ${colorStatus} font-medium flex items-start gap-1.5 mb-1.5 border-b border-slate-200/50 pb-1"><div class="mt-0.5">${iconStatus}</div><div>${log}</div></div>`;
             });
             infoPeminjam = `<div class="mt-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 rounded-lg p-2.5"><div class="flex justify-between items-center mb-2"><span class="text-[9px] font-bold text-slate-400">LOG HISTORI</span><button onclick="clearHistory('${item.ID_Barang}', '${item.Nama_Barang}')" class="text-[9px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded"><i class="fa-solid fa-eraser"></i> Bersihkan</button></div>${logHTML}</div>`;
         }
 
-        const itemIcon = getItemIcon(item.Nama_Barang);
-        const badgeDipakai = dipakai > 0 ? `<span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md ml-2">Dipinjam: ${dipakai}</span>` : '';
+        const itemIcon = getItemIcon(item.Nama_Barang); const badgeDipakai = dipakai > 0 ? `<span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md ml-2">Dipinjam: ${dipakai}</span>` : '';
         const locBox = item.Lokasi_Box ? `<span class="ml-2 text-indigo-500"><i class="fa-solid fa-box-open"></i> ${item.Lokasi_Box}</span>` : '';
         const locHTML = `<span class="text-[10px] text-slate-500 font-bold flex items-center bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md"><i class="fa-solid fa-location-dot text-emerald-500 mr-1.5"></i> ${item.Lokasi_Simpan || 'Gudang'} ${locBox}</span>`;
 
@@ -148,8 +159,8 @@ function renderData() {
                 ${infoPeminjam}
               </div>
               <div class="flex gap-2 pt-3 mt-3 border-t border-slate-50">
-                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1, '${item.Satuan}')" class="flex-1 bg-rose-50 text-rose-600 py-2 rounded-xl font-bold text-[11px]"><i class="fa-solid fa-minus mr-1"></i> Pakai</button>
-                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1, '${item.Satuan}')" class="flex-1 bg-emerald-50 text-emerald-600 py-2 rounded-xl font-bold text-[11px]"><i class="fa-solid fa-plus mr-1"></i> Kembali</button>
+                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', 1, '${item.Satuan}')" class="flex-1 bg-rose-50 text-rose-600 py-2 rounded-xl font-bold text-[11px] hover:bg-rose-100 transition-colors"><i class="fa-solid fa-minus mr-1"></i> Pakai</button>
+                <button onclick="openPinjamModal('${item.ID_Barang}', '${item.Nama_Barang}', -1, '${item.Satuan}')" class="flex-1 bg-emerald-50 text-emerald-600 py-2 rounded-xl font-bold text-[11px] hover:bg-emerald-100 transition-colors"><i class="fa-solid fa-plus mr-1"></i> Kembali</button>
               </div>
             </div>`;
         } else {
@@ -176,23 +187,35 @@ function renderData() {
             </div>`;
         }
     });
+    if (currentViewMode === 'list') initSwipeCards();
+}
+
+function initSwipeCards() {
+    document.querySelectorAll('.swipe-card').forEach(card => {
+        let startX = 0; let isSwiping = false;
+        card.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isSwiping = true; card.style.transition = 'none'; }, { passive: true });
+        card.addEventListener('touchmove', (e) => { if (!isSwiping) return; let diffX = e.touches[0].clientX - startX; if (Math.abs(diffX) > 15) card.style.transform = `translateX(${diffX}px)`; }, { passive: true });
+        card.addEventListener('touchend', (e) => {
+            isSwiping = false; card.style.transition = 'transform 0.3s ease-out'; let diffX = e.changedTouches[0].clientX - startX;
+            if (diffX > 90) { card.style.transform = `translateX(120px)`; setTimeout(() => { card.style.transform = `translateX(0)`; openPinjamModal(card.dataset.id, card.dataset.name, -1, card.dataset.unit); }, 200); } 
+            else if (diffX < -90) { card.style.transform = `translateX(-120px)`; setTimeout(() => { card.style.transform = `translateX(0)`; openPinjamModal(card.dataset.id, card.dataset.name, 1, card.dataset.unit); }, 200); } 
+            else { card.style.transform = `translateX(0)`; }
+        });
+    });
 }
 
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 
 function openPinjamModal(id, namaBarang, aksi, satuan) {
-    document.getElementById('pinjamItemId').value = id; document.getElementById('pinjamAksi').value = aksi; 
-    document.getElementById('pinjamSatuan').innerText = satuan || 'pcs'; document.getElementById('pinjamQty').value = ''; document.getElementById('pinjamNamaInput').value = '';
+    document.getElementById('pinjamItemId').value = id; document.getElementById('pinjamAksi').value = aksi; document.getElementById('pinjamSatuan').innerText = satuan || 'pcs'; document.getElementById('pinjamQty').value = ''; document.getElementById('pinjamNamaInput').value = '';
     const title = document.getElementById('pinjamTitle'); const icon = document.getElementById('pinjamIcon'); const desc = document.getElementById('pinjamDesc'); const btn = document.getElementById('pinjamSubmitBtn');
     if (aksi === 1) {
         title.innerText = "Pakai Barang"; icon.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-rose-100 text-rose-500 text-xl"; icon.innerHTML = "<i class=\"fa-solid fa-hand-holding-hand\"></i>";
-        desc.innerHTML = `Barang: <strong class="text-slate-800">${namaBarang}</strong>. Berapa jumlah dipakai?`;
-        btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 bg-rose-500 hover:bg-rose-600"; btn.innerText = "Konfirmasi Pakai";
+        desc.innerHTML = `Barang: <strong class="text-slate-800">${namaBarang}</strong>. Berapa jumlah dipakai?`; btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 bg-rose-500 hover:bg-rose-600"; btn.innerText = "Konfirmasi Pakai";
     } else {
         title.innerText = "Kembalikan Barang"; icon.className = "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-emerald-100 text-emerald-500 text-xl"; icon.innerHTML = "<i class=\"fa-solid fa-box-archive\"></i>";
-        desc.innerHTML = `Barang: <strong class="text-slate-800">${namaBarang}</strong>. Berapa jumlah dikembalikan?`;
-        btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 bg-emerald-500 hover:bg-emerald-600"; btn.innerText = "Konfirmasi Kembali";
+        desc.innerHTML = `Barang: <strong class="text-slate-800">${namaBarang}</strong>. Berapa jumlah dikembalikan?`; btn.className = "w-full text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 bg-emerald-500 hover:bg-emerald-600"; btn.innerText = "Konfirmasi Kembali";
     }
     document.getElementById('pinjamModal').classList.remove('hidden');
 }
@@ -202,119 +225,116 @@ async function submitPinjam(event) {
     if (event) event.preventDefault();
     const id = document.getElementById('pinjamItemId').value; const aksi = Number(document.getElementById('pinjamAksi').value); const qtyInput = parseFloat(document.getElementById('pinjamQty').value); const namaKru = document.getElementById('pinjamNamaInput').value;
     if (isNaN(qtyInput) || qtyInput <= 0 || !namaKru || !namaKru.trim()) { showToast("Data tidak valid!"); return; }
-    closePinjamModal();
-    const itemIndex = inventoryData.findIndex(i => i.ID_Barang === id);
-    if(itemIndex > -1) {
-        inventoryData[itemIndex].Sedang_Dipakai = Number(inventoryData[itemIndex].Sedang_Dipakai) + (aksi * qtyInput);
-        inventoryData[itemIndex].Sisa_Stok = Number(inventoryData[itemIndex].Total_Stok) - inventoryData[itemIndex].Sedang_Dipakai;
-        renderData(); showToast("✓ Memproses di background...");
-    }
-    try {
-        await apiRequest({ action: 'adjust_stock', id: id, change: aksi * qtyInput, nama: namaKru.trim() });
-        loadData(true); 
-    } catch(e) { 
-        if (e && e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } else { showToast("❌ Gagal mengirim."); loadData(true); }
-    }
+    closePinjamModal(); const itemIndex = inventoryData.findIndex(i => i.ID_Barang === id);
+    if(itemIndex > -1) { inventoryData[itemIndex].Sedang_Dipakai = Number(inventoryData[itemIndex].Sedang_Dipakai) + (aksi * qtyInput); inventoryData[itemIndex].Sisa_Stok = Number(inventoryData[itemIndex].Total_Stok) - inventoryData[itemIndex].Sedang_Dipakai; renderData(); showToast("✓ Memproses di background..."); }
+    try { await apiRequest({ action: 'adjust_stock', id: id, change: aksi * qtyInput, nama: namaKru.trim() }); loadData(true); } catch(e) { if (e && e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } else { showToast("❌ Gagal mengirim."); loadData(true); } }
 }
 
-async function clearHistory(id, namaBarang) {
-    if (!confirm(`Hapus histori peminjaman untuk ${namaBarang}?`)) return;
-    try { await apiRequest({ action: 'clear_history', id: id }); showToast("Histori dibersihkan!"); loadData(true); } 
-    catch(e) { showToast("Gagal membersihkan histori."); }
-}
+async function clearHistory(id, namaBarang) { if (!confirm(`Hapus histori peminjaman untuk ${namaBarang}?`)) return; try { await apiRequest({ action: 'clear_history', id: id }); showToast("Histori dibersihkan!"); loadData(true); } catch(e) { showToast("Gagal membersihkan histori."); } }
 
 async function submitNewItem(event) {
     event.preventDefault(); const btn = document.getElementById('submitBtn'); btn.innerText = "Memproses..."; btn.disabled = true;
-    const newItem = {
-        Nama_Barang: document.getElementById('newName').value, Kategori: document.getElementById('newCategory').value,
-        Lokasi_Simpan: document.getElementById('newLocation').value, Lokasi_Box: document.getElementById('newLokasiBox').value, 
-        Total_Stok: document.getElementById('newTotal').value, Satuan: document.getElementById('newUnit').value, 
-        Keterangan: document.getElementById('newDesc').value, Dibawa_Ke_Gedung: document.getElementById('newBawaKeGedung').value
-    };
-    try {
-        await apiRequest({ action: 'create_item', item: newItem });
-        closeAddModal(); document.getElementById('addItemForm').reset(); showToast("Barang ditambah!"); loadData(true); 
-    } catch (e) { showToast("Gagal menyimpan."); btn.disabled = false; btn.innerText = "Simpan Data"; }
+    const newItem = { Nama_Barang: document.getElementById('newName').value, Kategori: document.getElementById('newCategory').value, Lokasi_Simpan: document.getElementById('newLocation').value, Lokasi_Box: document.getElementById('newLokasiBox').value, Total_Stok: document.getElementById('newTotal').value, Satuan: document.getElementById('newUnit').value, Keterangan: document.getElementById('newDesc').value, Dibawa_Ke_Gedung: document.getElementById('newBawaKeGedung').value };
+    try { await apiRequest({ action: 'create_item', item: newItem }); closeAddModal(); document.getElementById('addItemForm').reset(); showToast("Barang ditambah!"); loadData(true); } catch (e) { showToast("Gagal menyimpan."); btn.disabled = false; btn.innerText = "Simpan Data"; }
 }
 
 function openEditItemModal(id) {
     const item = inventoryData.find(i => i.ID_Barang === id); if (!item) return;
-    document.getElementById('editId').value = item.ID_Barang; document.getElementById('editName').value = item.Nama_Barang;
-    document.getElementById('editCategory').value = item.Kategori; document.getElementById('editLocation').value = item.Lokasi_Simpan || '';
-    document.getElementById('editLokasiBox').value = item.Lokasi_Box || ''; document.getElementById('editBawaKeGedung').value = item.Dibawa_Ke_Gedung || 'YA';
-    document.getElementById('editTotal').value = item.Total_Stok; document.getElementById('editUnit').value = item.Satuan; document.getElementById('editDesc').value = item.Keterangan || ''; 
-    let extraBtns = document.getElementById('extraEditButtons');
-    if(!extraBtns) {
-        extraBtns = document.createElement('div'); extraBtns.id = 'extraEditButtons'; extraBtns.className = "flex gap-2 mt-4 pt-4 border-t border-slate-100";
-        document.getElementById('editItemForm').appendChild(extraBtns);
-    }
+    document.getElementById('editId').value = item.ID_Barang; document.getElementById('editName').value = item.Nama_Barang; document.getElementById('editCategory').value = item.Kategori; document.getElementById('editLocation').value = item.Lokasi_Simpan || ''; document.getElementById('editLokasiBox').value = item.Lokasi_Box || ''; document.getElementById('editBawaKeGedung').value = item.Dibawa_Ke_Gedung || 'YA'; document.getElementById('editTotal').value = item.Total_Stok; document.getElementById('editUnit').value = item.Satuan; document.getElementById('editDesc').value = item.Keterangan || ''; 
+    let extraBtns = document.getElementById('extraEditButtons'); if(!extraBtns) { extraBtns = document.createElement('div'); extraBtns.id = 'extraEditButtons'; extraBtns.className = "flex gap-2 mt-4 pt-4 border-t border-slate-100"; document.getElementById('editItemForm').appendChild(extraBtns); }
     extraBtns.innerHTML = `<button type="button" onclick="hapusBarang('${id}')" class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl text-sm transition-colors"><i class="fa-solid fa-trash mr-1"></i> Hapus Barang Ini</button>`;
     document.getElementById('editItemModal').classList.remove('hidden');
 }
-
 function closeEditItemModal() { document.getElementById('editItemModal').classList.add('hidden'); }
 
 async function submitEditItem(event) {
     event.preventDefault(); const btn = document.getElementById('submitEditBtn'); btn.innerText = "Menyimpan..."; btn.disabled = true;
-    const editedItem = {
-        Nama_Barang: document.getElementById('editName').value, Kategori: document.getElementById('editCategory').value,
-        Lokasi_Simpan: document.getElementById('editLocation').value, Lokasi_Box: document.getElementById('editLokasiBox').value, 
-        Total_Stok: document.getElementById('editTotal').value, Satuan: document.getElementById('editUnit').value, 
-        Keterangan: document.getElementById('editDesc').value, Dibawa_Ke_Gedung: document.getElementById('editBawaKeGedung').value
-    };
-    try { await apiRequest({ action: 'edit_item', id: document.getElementById('editId').value, item: editedItem }); closeEditItemModal(); showToast("Perubahan disimpan!"); loadData(true); } 
-    catch (e) { showToast("Gagal mengedit barang."); btn.disabled = false; btn.innerText = "Update Data"; }
+    const editedItem = { Nama_Barang: document.getElementById('editName').value, Kategori: document.getElementById('editCategory').value, Lokasi_Simpan: document.getElementById('editLocation').value, Lokasi_Box: document.getElementById('editLokasiBox').value, Total_Stok: document.getElementById('editTotal').value, Satuan: document.getElementById('editUnit').value, Keterangan: document.getElementById('editDesc').value, Dibawa_Ke_Gedung: document.getElementById('editBawaKeGedung').value };
+    try { await apiRequest({ action: 'edit_item', id: document.getElementById('editId').value, item: editedItem }); closeEditItemModal(); showToast("Perubahan disimpan!"); loadData(true); } catch (e) { showToast("Gagal mengedit barang."); btn.disabled = false; btn.innerText = "Update Data"; }
+}
+async function hapusBarang(id) { if(!confirm("⚠️ YAKIN HAPUS BARANG INI DARI DATABASE?")) return; closeEditItemModal(); showToast("🗑️ Menghapus..."); await apiRequest({ action: 'delete_item', id: id }); loadData(true); }
+
+// ============================================
+// MODUL 2: TUGAS / CHECKLIST (BARU)
+// ============================================
+function openAddTugasModal() { document.getElementById('addTugasModal').classList.remove('hidden'); }
+function closeAddTugasModal() { document.getElementById('addTugasModal').classList.add('hidden'); }
+
+async function loadTugasData(isSilent = false) {
+    if (!isSilent) document.getElementById('tugasContent').innerHTML = `<div class="text-center py-10 text-slate-400 text-sm animate-pulse">Mengambil data tugas...</div>`;
+    try {
+        const res = await fetch(API_URL + "?type=relawan"); const json = await res.json();
+        tugasData = json.data || []; renderTugas();
+    } catch (e) { document.getElementById('tugasContent').innerHTML = `<div class="text-center py-10 text-red-500 font-bold">Gagal memuat tugas.</div>`; }
 }
 
-async function pindahLokasi(id) {
-    const newLoc = prompt("Ketik Pindah Ke Box Mana? (Misal: Box 1):");
-    if(!newLoc) return; closeEditItemModal(); showToast("🚚 Memindahkan...");
-    await apiRequest({ action: 'move_item', id: id, newLocation: newLoc }); loadData(true);
+function renderTugas() {
+    const content = document.getElementById('tugasContent'); content.innerHTML = '';
+    if (tugasData.length === 0) { content.innerHTML = `<div class="bg-white p-6 rounded-2xl text-center shadow-sm border border-slate-100 text-slate-400"><i class="fa-solid fa-mug-hot text-3xl mb-3"></i><p>Belum ada daftar tugas. Kru bisa santai!</p></div>`; return; }
+
+    tugasData.forEach(tgs => {
+        const isSelesai = tgs.Status === 'SELESAI';
+        const bgCard = isSelesai ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-100 dark:bg-[#1e293b]';
+        const colorTitle = isSelesai ? 'text-emerald-700 line-through' : 'text-slate-800 dark:text-white';
+        const iconCheck = isSelesai ? '<i class="fa-solid fa-circle-check text-emerald-500 text-3xl"></i>' : '<i class="fa-regular fa-circle text-slate-300 text-3xl hover:text-indigo-400 transition-colors"></i>';
+        
+        content.innerHTML += `
+        <div class="${bgCard} border rounded-2xl p-4 shadow-sm relative transition-all">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTugas('${tgs.ID_Tugas}', '${isSelesai ? 'BELUM' : 'SELESAI'}')" class="shrink-0 focus:outline-none active:scale-90 transition-transform">${iconCheck}</button>
+                <div class="flex-1">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md"><i class="fa-solid fa-user-tag"></i> ${tgs.Nama_Kru}</span>
+                        <button onclick="hapusTugas('${tgs.ID_Tugas}')" class="text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <h4 class="${colorTitle} font-bold text-sm mb-1">${tgs.Area_Tugas}</h4>
+                    <p class="text-xs text-slate-500"><i class="fa-solid fa-toolbox text-amber-500 w-4"></i> Alat: ${tgs.Alat_Bawaan}</p>
+                </div>
+            </div>
+        </div>`;
+    });
 }
 
-async function hapusBarang(id) {
-    if(!confirm("⚠️ YAKIN HAPUS BARANG INI DARI DATABASE?")) return;
-    closeEditItemModal(); showToast("🗑️ Menghapus..."); await apiRequest({ action: 'delete_item', id: id }); loadData(true);
+async function submitNewTugas(event) {
+    event.preventDefault(); const btn = document.getElementById('submitTugasBtn'); btn.innerText = "Menyimpan..."; btn.disabled = true;
+    const newItem = { Nama_Kru: document.getElementById('tugasNama').value, Area_Tugas: document.getElementById('tugasArea').value, Alat_Bawaan: document.getElementById('tugasAlat').value };
+    try { await apiRequest({ action: 'create_tugas', item: newItem }); closeAddTugasModal(); document.getElementById('tugasNama').value=''; document.getElementById('tugasArea').value=''; document.getElementById('tugasAlat').value=''; showToast("Tugas Kru Ditambahkan!"); loadTugasData(true); } 
+    catch (e) { showToast("Gagal menambah tugas."); } finally { btn.disabled = false; btn.innerText = "Simpan Tugas Pra-Acara"; }
 }
 
+async function toggleTugas(id, statusBaru) {
+    const tgs = tugasData.find(t => t.ID_Tugas === id); if(tgs) { tgs.Status = statusBaru; renderTugas(); }
+    try { await apiRequest({ action: 'toggle_tugas', id: id, status: statusBaru }); loadTugasData(true); } catch(e) { showToast("Gagal update status"); }
+}
+async function hapusTugas(id) {
+    if(!confirm("Yakin hapus tugas ini?")) return;
+    try { await apiRequest({ action: 'delete_tugas', id: id }); showToast("Tugas dihapus!"); loadTugasData(true); } catch(e) { showToast("Gagal hapus tugas."); }
+}
+
+// ============================================
+// MODUL 3: CETAK PDF
+// ============================================
 function openReportModal() { document.getElementById('reportModal').classList.remove('hidden'); }
 function closeReportModal() { document.getElementById('reportModal').classList.add('hidden'); }
-
 function generatePDF(type) {
     const isBawaanOnly = confirm("Cetak HANYA Barang 'Akan Dibawa' (OK) atau SELURUH Master Inventaris (Cancel)?");
-    const { jsPDF } = window.jspdf; const doc = new jsPDF();
-    const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("DEPARTEMEN KEBERSIHAN", 105, 20, { align: "center" });
-    doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Pertemuan Wilayah - Oktober 2026 (${isBawaanOnly ? 'Akan Dibawa' : 'Master'})`, 105, 26, { align: "center" }); doc.line(14, 30, 196, 30);
+    const { jsPDF } = window.jspdf; const doc = new jsPDF(); const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("DEPARTEMEN KEBERSIHAN", 105, 20, { align: "center" }); doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Pertemuan Wilayah - Oktober 2026 (${isBawaanOnly ? 'Akan Dibawa' : 'Master'})`, 105, 26, { align: "center" }); doc.line(14, 30, 196, 30);
     let fileName = ""; let dataToPrint = inventoryData;
     if (isBawaanOnly) { dataToPrint = inventoryData.filter(i => i.Dibawa_Ke_Gedung === 'YA' || i.Dibawa_Ke_Gedung === true || String(i.Dibawa_Ke_Gedung).toUpperCase() === 'YA'); }
     if (type === 'stok') {
         doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("LAPORAN SISA STOK AKHIR", 14, 40); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
-        const tableHeaders = [["Nama Barang", "Keterangan", "Lokasi", "Total", "Dipakai", "SISA"]];
-        let alatData = []; let habisPakaiData = [];
-        dataToPrint.forEach(item => {
-            const locFinal = item.Lokasi_Box ? `${item.Lokasi_Simpan} (${item.Lokasi_Box})` : (item.Lokasi_Simpan || 'Gudang');
-            const rowData = [ item.Nama_Barang, item.Keterangan || '-', locFinal, `${item.Total_Stok} ${item.Satuan}`, `${item.Sedang_Dipakai} ${item.Satuan}`, `${item.Sisa_Stok} ${item.Satuan}` ];
-            if (item.Kategori === "Alat / Sabun") { alatData.push(rowData); } else { habisPakaiData.push(rowData); }
-        });
+        const tableHeaders = [["Nama Barang", "Keterangan", "Lokasi", "Total", "Dipakai", "SISA"]]; let alatData = []; let habisPakaiData = [];
+        dataToPrint.forEach(item => { const locFinal = item.Lokasi_Box ? `${item.Lokasi_Simpan} (${item.Lokasi_Box})` : (item.Lokasi_Simpan || 'Gudang'); const rowData = [ item.Nama_Barang, item.Keterangan || '-', locFinal, `${item.Total_Stok} ${item.Satuan}`, `${item.Sedang_Dipakai} ${item.Satuan}`, `${item.Sisa_Stok} ${item.Satuan}` ]; if (item.Kategori === "Alat / Sabun") { alatData.push(rowData); } else { habisPakaiData.push(rowData); } });
         let currentY = 50;
-        if (alatData.length > 0) {
-            doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(16, 185, 129); doc.text("KATEGORI: ALAT / SABUN", 14, currentY);
-            doc.autoTable({ startY: currentY + 3, head: tableHeaders, body: alatData, theme: 'grid', headStyles: { fillColor: [16, 185, 129] }, styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 }, columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, margin: { top: 10 } });
-            currentY = doc.lastAutoTable.finalY + 10;
-        }
-        if (habisPakaiData.length > 0) {
-            if (currentY > 250) { doc.addPage(); currentY = 20; }
-            doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(59, 130, 246); doc.text("KATEGORI: HABIS PAKAI", 14, currentY);
-            doc.autoTable({ startY: currentY + 3, head: tableHeaders, body: habisPakaiData, theme: 'grid', headStyles: { fillColor: [59, 130, 246] }, styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 }, columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, margin: { top: 10 } });
-        }
+        if (alatData.length > 0) { doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(16, 185, 129); doc.text("KATEGORI: ALAT / SABUN", 14, currentY); doc.autoTable({ startY: currentY + 3, head: tableHeaders, body: alatData, theme: 'grid', headStyles: { fillColor: [16, 185, 129] }, styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 }, columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, margin: { top: 10 } }); currentY = doc.lastAutoTable.finalY + 10; }
+        if (habisPakaiData.length > 0) { if (currentY > 250) { doc.addPage(); currentY = 20; } doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(59, 130, 246); doc.text("KATEGORI: HABIS PAKAI", 14, currentY); doc.autoTable({ startY: currentY + 3, head: tableHeaders, body: habisPakaiData, theme: 'grid', headStyles: { fillColor: [59, 130, 246] }, styles: { fontSize: 8, font: "helvetica", valign: 'middle', cellPadding: 2 }, columnStyles: { 5: { fontStyle: 'bold', textColor: [225, 29, 72] } }, margin: { top: 10 } }); }
         fileName = `Laporan_Stok_Kebersihan.pdf`;
     } else if (type === 'penggunaan') {
-        doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("LAPORAN RIWAYAT PENGGUNAAN BARANG", 14, 40); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(`Tanggal Unduh: ${dateStr}`, 14, 45);
-        const tableHeaders = [["Kategori", "Nama Barang", "Satuan", "Kru Peminjam & Detail Waktu"]]; let tableData = []; const sortedData = [...dataToPrint].sort((a, b) => a.Kategori.localeCompare(b.Kategori));
+        doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("LAPORAN PENGGUNAAN", 14, 40); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(`Tanggal: ${dateStr}`, 14, 45);
+        const tableHeaders = [["Kategori", "Nama Barang", "Satuan", "Kru Peminjam & Waktu"]]; let tableData = []; const sortedData = [...dataToPrint].sort((a, b) => a.Kategori.localeCompare(b.Kategori));
         sortedData.forEach(item => { const logs = item.Dipinjam_Oleh ? item.Dipinjam_Oleh.replace(/;/g, '\n') : '-'; if (logs !== '-') { tableData.push([ item.Kategori, item.Nama_Barang, item.Satuan, logs ]); } });
-        doc.autoTable({ startY: 50, head: tableHeaders, body: tableData, theme: 'grid', headStyles: { fillColor: [16, 185, 129] }, styles: { fontSize: 8, font: "helvetica", valign: 'middle' } });
-        fileName = `Laporan_Riwayat_Kebersihan.pdf`;
+        doc.autoTable({ startY: 50, head: tableHeaders, body: tableData, theme: 'grid', headStyles: { fillColor: [16, 185, 129] }, styles: { fontSize: 8, font: "helvetica", valign: 'middle' } }); fileName = `Laporan_Penggunaan_Kebersihan.pdf`;
     }
     doc.save(fileName); closeReportModal(); showToast("PDF Berhasil Diunduh!");
 }
