@@ -76,14 +76,30 @@ function switchPage(page) {
 // ============================================
 function setTabStatus(status) { currentTabStatus = status; renderData(); }
 
+// --- FITUR BARU: LOADING INSTAN PAKAI CACHE ---
 async function loadData(isSilent = false) {
     if (currentPage !== 'inven') return;
-    if (!isSilent) { document.getElementById('loading').style.display = 'flex'; document.getElementById('content').innerHTML = ''; }
+    
+    const cachedData = localStorage.getItem('invenDataCache');
+    if (cachedData && !isSilent) {
+        inventoryData = JSON.parse(cachedData);
+        renderData(); 
+    } else if (!isSilent) {
+        document.getElementById('loading').style.display = 'flex'; 
+        document.getElementById('content').innerHTML = '';
+    }
+
     try {
-        const invRes = await fetch(API_URL + "?type=inventaris"); const invJson = await invRes.json();
-        inventoryData = invJson.data || []; document.getElementById('loading').style.display = 'none'; renderData();
+        const invRes = await fetch(API_URL + "?type=inventaris"); 
+        const invJson = await invRes.json();
+        inventoryData = invJson.data || []; 
+        localStorage.setItem('invenDataCache', JSON.stringify(inventoryData));
+        document.getElementById('loading').style.display = 'none'; 
+        renderData(); 
     } catch (err) {
-        if (!isSilent) document.getElementById('loading').innerHTML = `<div class="text-center py-10 bg-white rounded-2xl"><p class="text-red-500 font-bold">Gagal Terhubung</p><button onclick="loadData()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded">Muat Ulang</button></div>`;
+        if (!isSilent && !cachedData) {
+            document.getElementById('loading').innerHTML = `<div class="text-center py-10 bg-white rounded-2xl"><p class="text-red-500 font-bold">Gagal Terhubung</p><button onclick="loadData()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded">Muat Ulang</button></div>`;
+        }
     }
 }
 
@@ -166,7 +182,7 @@ function renderData() {
         } else {
             wrapper.innerHTML += `
             <div class="relative w-full rounded-2xl mb-1 overflow-hidden bg-slate-100 dark:bg-slate-800">
-               <!-- TEKS BACKGROUND YANG HILANG SUDAH DIKEMBALIKAN -->
+               <!-- TEKS BACKGROUND PAKAI/KEMBALI YANG DIKEMBALIKAN -->
                <div class="absolute inset-y-0 left-0 w-1/2 flex items-center pl-5 text-emerald-600 font-black"><i class="fa-solid fa-plus mr-2"></i> KEMBALI</div>
                <div class="absolute inset-y-0 right-0 w-1/2 flex justify-end items-center pr-5 text-rose-600 font-black">PAKAI <i class="fa-solid fa-minus ml-2"></i></div>
                
@@ -231,7 +247,11 @@ async function submitPinjam(event) {
     if (isNaN(qtyInput) || qtyInput <= 0 || !namaKru || !namaKru.trim()) { showToast("Data tidak valid!"); return; }
     closePinjamModal(); const itemIndex = inventoryData.findIndex(i => i.ID_Barang === id);
     if(itemIndex > -1) { inventoryData[itemIndex].Sedang_Dipakai = Number(inventoryData[itemIndex].Sedang_Dipakai) + (aksi * qtyInput); inventoryData[itemIndex].Sisa_Stok = Number(inventoryData[itemIndex].Total_Stok) - inventoryData[itemIndex].Sedang_Dipakai; renderData(); showToast("✓ Memproses di background..."); }
-    try { await apiRequest({ action: 'adjust_stock', id: id, change: aksi * qtyInput, nama: namaKru.trim() }); loadData(true); } catch(e) { if (e && e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } else { showToast("❌ Gagal mengirim."); loadData(true); } }
+    try { 
+        await apiRequest({ action: 'adjust_stock', id: id, change: aksi * qtyInput, nama: namaKru.trim() }); 
+        const invRes = await fetch(API_URL + "?type=inventaris"); const invJson = await invRes.json();
+        inventoryData = invJson.data || []; localStorage.setItem('invenDataCache', JSON.stringify(inventoryData));
+    } catch(e) { if (e && e.message === 'PIN_SALAH') { localStorage.removeItem('appPin'); location.reload(); } else { showToast("❌ Gagal mengirim."); loadData(true); } }
 }
 
 async function clearHistory(id, namaBarang) { if (!confirm(`Hapus histori peminjaman untuk ${namaBarang}?`)) return; try { await apiRequest({ action: 'clear_history', id: id }); showToast("Histori dibersihkan!"); loadData(true); } catch(e) { showToast("Gagal membersihkan histori."); } }
@@ -259,17 +279,25 @@ async function submitEditItem(event) {
 async function hapusBarang(id) { if(!confirm("⚠️ YAKIN HAPUS BARANG INI DARI DATABASE?")) return; closeEditItemModal(); showToast("🗑️ Menghapus..."); await apiRequest({ action: 'delete_item', id: id }); loadData(true); }
 
 // ============================================
-// MODUL 2: TUGAS / CHECKLIST (BARU)
+// MODUL 2: TUGAS / CHECKLIST (BARU & INSTAN)
 // ============================================
 function openAddTugasModal() { document.getElementById('addTugasModal').classList.remove('hidden'); }
 function closeAddTugasModal() { document.getElementById('addTugasModal').classList.add('hidden'); }
 
 async function loadTugasData(isSilent = false) {
-    if (!isSilent) document.getElementById('tugasContent').innerHTML = `<div class="text-center py-10 text-slate-400 text-sm animate-pulse">Mengambil data tugas...</div>`;
+    const cachedTugas = localStorage.getItem('tugasDataCache');
+    if (cachedTugas && !isSilent) {
+        tugasData = JSON.parse(cachedTugas); renderTugas();
+    } else if (!isSilent) {
+        document.getElementById('tugasContent').innerHTML = `<div class="text-center py-10 text-slate-400 text-sm animate-pulse">Mengambil data tugas...</div>`;
+    }
+
     try {
         const res = await fetch(API_URL + "?type=relawan"); const json = await res.json();
-        tugasData = json.data || []; renderTugas();
-    } catch (e) { document.getElementById('tugasContent').innerHTML = `<div class="text-center py-10 text-red-500 font-bold">Gagal memuat tugas.</div>`; }
+        tugasData = json.data || []; localStorage.setItem('tugasDataCache', JSON.stringify(tugasData)); renderTugas();
+    } catch (e) { 
+        if (!isSilent && !cachedTugas) document.getElementById('tugasContent').innerHTML = `<div class="text-center py-10 text-red-500 font-bold">Gagal memuat tugas.</div>`; 
+    }
 }
 
 function renderTugas() {
@@ -308,7 +336,11 @@ async function submitNewTugas(event) {
 
 async function toggleTugas(id, statusBaru) {
     const tgs = tugasData.find(t => t.ID_Tugas === id); if(tgs) { tgs.Status = statusBaru; renderTugas(); }
-    try { await apiRequest({ action: 'toggle_tugas', id: id, status: statusBaru }); loadTugasData(true); } catch(e) { showToast("Gagal update status"); }
+    try { 
+        await apiRequest({ action: 'toggle_tugas', id: id, status: statusBaru }); 
+        const res = await fetch(API_URL + "?type=relawan"); const json = await res.json();
+        tugasData = json.data || []; localStorage.setItem('tugasDataCache', JSON.stringify(tugasData));
+    } catch(e) { showToast("Gagal update status"); }
 }
 async function hapusTugas(id) {
     if(!confirm("Yakin hapus tugas ini?")) return;
