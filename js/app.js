@@ -248,7 +248,7 @@ function openEditItemModal(id) {
         extraBtns = document.createElement('div'); extraBtns.id = 'extraEditButtons'; extraBtns.className = "flex gap-2 mt-4 pt-4 border-t border-slate-100";
         document.getElementById('editItemForm').appendChild(extraBtns);
     }
-    extraBtns.innerHTML = `<button type="button" onclick="pindahLokasi('${id}')" class="flex-1 bg-blue-50 text-blue-600 font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-truck"></i> Pindah Box</button><button type="button" onclick="hapusBarang('${id}')" class="flex-1 bg-red-50 text-red-600 font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-trash"></i> Hapus</button>`;
+    extraBtns.innerHTML = `<button type="button" onclick="hapusBarang('${id}')" class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl text-sm transition-colors"><i class="fa-solid fa-trash mr-1"></i> Hapus Barang Ini</button>`;
     document.getElementById('editItemModal').classList.remove('hidden');
 }
 
