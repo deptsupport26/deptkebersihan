@@ -166,6 +166,10 @@ function renderData() {
         } else {
             wrapper.innerHTML += `
             <div class="relative w-full rounded-2xl mb-1 overflow-hidden bg-slate-100 dark:bg-slate-800">
+               <!-- TEKS BACKGROUND YANG HILANG SUDAH DIKEMBALIKAN -->
+               <div class="absolute inset-y-0 left-0 w-1/2 flex items-center pl-5 text-emerald-600 font-black"><i class="fa-solid fa-plus mr-2"></i> KEMBALI</div>
+               <div class="absolute inset-y-0 right-0 w-1/2 flex justify-end items-center pr-5 text-rose-600 font-black">PAKAI <i class="fa-solid fa-minus ml-2"></i></div>
+               
                <div class="swipe-card relative z-10 w-full bg-white dark:bg-[#1e293b] p-3 shadow-sm flex flex-col gap-2 rounded-2xl border border-slate-100" data-id="${item.ID_Barang}" data-name="${item.Nama_Barang}" data-unit="${item.Satuan}">
                   <div class="absolute top-0 left-0 h-full w-1.5 ${sisa > 0 ? 'bg-emerald-400' : 'bg-rose-400'} rounded-l-2xl"></div>
                   <div class="flex items-center gap-3">
