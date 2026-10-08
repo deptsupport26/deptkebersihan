@@ -13,27 +13,28 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <style>
-    body { transition: background-color 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; overflow-x: hidden; }
+    body { transition: background-color 0.3s ease, color 0.3s ease; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; overflow-x: hidden; padding-bottom: 80px;}
     .dark body { background-color: #0f172a; color: #f8fafc; }
     .dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
     .dark .text-slate-800 { color: #f8fafc !important; }
     .dark .text-slate-500 { color: #94a3b8 !important; }
     .dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; }
-    .dark .border-slate-100, .dark .border-slate-200 { border-color: #334155 !important; }
-    .dark #pinjamModal .bg-slate-50, .dark #addModal .bg-slate-50, .dark #editItemModal .bg-slate-50 { background-color: #334155 !important; }
-    .dark input, .dark select { background-color: #0f172a !important; color: #f8fafc !important; }
+    .dark .border-slate-100, .dark .border-slate-200, .dark .border-t { border-color: #334155 !important; }
+    .dark #pinjamModal .bg-slate-50, .dark #addModal .bg-slate-50, .dark #editItemModal .bg-slate-50, .dark #addTugasModal .bg-slate-50 { background-color: #334155 !important; }
+    .dark input, .dark select, .dark textarea { background-color: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; }
     .swipe-card { touch-action: pan-y; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-emerald-200">
 
+  <!-- Layar Login Awal -->
   <div id="pinModal" class="fixed inset-0 bg-slate-900/95 backdrop-blur-lg z-[100] hidden flex flex-col items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl transform transition-all text-center dark:bg-[#1e293b]">
       <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl"><i class="fa-solid fa-shield-halved"></i></div>
       <h2 class="text-2xl font-black text-slate-800 mb-2">Akses Terkunci</h2>
       <p class="text-sm text-slate-500 mb-6">Masukkan kata sandi departemen.</p>
       <input type="password" id="inputPin" class="w-full text-center text-lg font-bold bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 focus:ring-2 focus:ring-emerald-500 outline-none uppercase">
-      <button onclick="unlockApp()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all">Buka Gembok</button>
+      <button onclick="unlockApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all">Buka Gembok</button>
     </div>
   </div>
 
@@ -46,56 +47,80 @@
       <div class="flex items-start gap-3">
         <div class="bg-emerald-100 text-emerald-600 p-2.5 rounded-xl mt-1"><i class="fa-solid fa-leaf text-xl"></i></div>
         <div>
-          <h1 class="text-lg font-extrabold text-slate-800">Dept. Kebersihan</h1>
-          <p class="text-[10px] font-bold text-emerald-600 uppercase">Pertemuan Wilayah xx 2027</p>
+          <h1 class="text-lg font-extrabold text-slate-800" id="headerTitle">Dept. Kebersihan</h1>
+          <p class="text-[10px] font-bold text-emerald-600 uppercase">Pertemuan Wilayah 3 Oktober 2026</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="reportBug()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 transition-all shrink-0"><i class="fa-solid fa-bug"></i></button>
         <button onclick="toggleDarkMode()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-yellow-400 hover:bg-slate-200 transition-all shrink-0"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
-        <button onclick="openReportModal()" class="hidden md:flex w-auto px-4 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-md active:scale-95 items-center justify-center gap-1.5 h-10"><i class="fa-solid fa-file-pdf"></i> Laporan</button>
-        <button onclick="openAddModal()" class="hidden md:flex w-auto px-4 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-md active:scale-95 items-center justify-center gap-1.5 h-10"><i class="fa-solid fa-plus"></i> Tambah</button>
       </div>
     </div>
   </header>
 
-  <main class="p-4 max-w-2xl mx-auto pb-24">
-    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 mb-5 transition-colors">
-      <div class="flex gap-2 mb-3">
-        <div class="relative flex-1 group">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400"><i class="fa-solid fa-magnifying-glass text-sm"></i></div>
-          <input type="text" id="search" oninput="renderData()" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 block w-full pl-10 p-3 outline-none" placeholder="Cari barang, box...">
-        </div>
-        <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl shrink-0 gap-1 items-center transition-colors">
-          <button onclick="setViewMode('list')" id="btnListView" class="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all"><i class="fa-solid fa-list-ul"></i></button>
-          <button onclick="setViewMode('grid')" id="btnGridView" class="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold text-slate-400 dark:bg-slate-800"><i class="fa-solid fa-border-all"></i></button>
-        </div>
-      </div>
-      <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button onclick="setCategory('Semua', this)" class="cat-chip cat-active px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-emerald-600 text-white shadow-sm shadow-emerald-200">Semua</button>
-        <button onclick="setCategory('Alat / Sabun', this)" class="cat-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-white text-slate-500 border border-slate-200">Alat / Sabun</button>
-        <button onclick="setCategory('Habis Pakai', this)" class="cat-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-white text-slate-500 border border-slate-200">Habis Pakai</button>
-      </div>
-    </div>
-
+  <main class="p-4 max-w-2xl mx-auto">
     <div id="loading" class="flex flex-col items-center justify-center py-16 hidden">
       <div class="w-12 h-12 border-4 border-slate-100 dark:border-slate-700 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
       <p class="text-slate-500 font-medium text-sm animate-pulse">Memuat Data...</p>
     </div>
-    <div id="content" class="space-y-4"></div>
+
+    <!-- HALAMAN INVENTARIS (LAMA) -->
+    <div id="pageInven" class="block">
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 mb-5 transition-colors">
+          <div class="flex gap-2 mb-3">
+            <div class="relative flex-1 group">
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400"><i class="fa-solid fa-magnifying-glass text-sm"></i></div>
+              <input type="text" id="search" oninput="renderData()" class="bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-emerald-500 block w-full pl-10 p-3 outline-none" placeholder="Cari barang, box...">
+            </div>
+            <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl shrink-0 gap-1 items-center transition-colors">
+              <button onclick="setViewMode('list')" id="btnListView" class="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all"><i class="fa-solid fa-list-ul"></i></button>
+              <button onclick="setViewMode('grid')" id="btnGridView" class="w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold text-slate-400 dark:bg-slate-800"><i class="fa-solid fa-border-all"></i></button>
+            </div>
+          </div>
+          <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <button onclick="setCategory('Semua', this)" class="cat-chip cat-active px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-emerald-600 text-white shadow-sm shadow-emerald-200">Semua</button>
+            <button onclick="setCategory('Alat / Sabun', this)" class="cat-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-white text-slate-500 border border-slate-200">Alat / Sabun</button>
+            <button onclick="setCategory('Habis Pakai', this)" class="cat-chip px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-white text-slate-500 border border-slate-200">Habis Pakai</button>
+          </div>
+        </div>
+        
+        <div id="content" class="space-y-4"></div>
+        
+        <!-- Tombol Tambah & Cetak untuk Inven -->
+        <div class="fixed bottom-24 right-6 z-30 flex flex-col gap-3 items-end">
+            <button onclick="openReportModal()" class="w-12 h-12 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg active:scale-90 transition-transform"><i class="fa-solid fa-file-pdf"></i></button>
+            <button onclick="openAddModal()" class="w-14 h-14 bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl active:scale-90 transition-transform"><i class="fa-solid fa-plus"></i></button>
+        </div>
+    </div>
+
+    <!-- HALAMAN CHECKLIST PRA-HARI H (BARU) -->
+    <div id="pageTugas" class="hidden">
+        <div class="flex justify-between items-center mb-4 px-2">
+            <h2 class="text-xl font-black text-slate-800 dark:text-white">Checklist Lapangan</h2>
+            <button onclick="openAddTugasModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition-colors"><i class="fa-solid fa-plus mr-1"></i> Set Tugas</button>
+        </div>
+        <div id="tugasContent" class="space-y-3"></div>
+    </div>
   </main>
 
-  <div class="md:hidden fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
-    <button onclick="openReportModal()" class="w-12 h-12 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center text-lg active:scale-90"><i class="fa-solid fa-file-pdf"></i></button>
-    <button onclick="openAddModal()" class="w-14 h-14 bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl active:scale-90"><i class="fa-solid fa-plus"></i></button>
-  </div>
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="fixed bottom-0 w-full bg-white dark:bg-[#1e293b] border-t border-slate-200 pb-safe pt-2 px-6 z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] transition-colors">
+      <div class="flex justify-around max-w-sm mx-auto mb-2">
+          <button onclick="switchPage('inven')" id="navInven" class="flex flex-col items-center gap-1 text-emerald-600 transition-colors w-20">
+              <i class="fa-solid fa-box text-xl"></i><span class="text-[10px] font-bold">Gudang</span>
+          </button>
+          <button onclick="switchPage('tugas')" id="navTugas" class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 transition-colors w-20">
+              <i class="fa-solid fa-clipboard-check text-xl"></i><span class="text-[10px] font-bold">Checklist</span>
+          </button>
+      </div>
+  </nav>
 
   <!-- Modal Peminjaman -->
   <div id="pinjamModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl transform transition-all dark:bg-[#1e293b]">
       <div class="flex justify-between items-start mb-4">
         <div><div id="pinjamIcon" class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"></div><h3 class="text-base font-extrabold text-slate-800" id="pinjamTitle">Konfirmasi</h3></div>
-        <button onclick="closePinjamModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closePinjamModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <input type="hidden" id="pinjamItemId"><input type="hidden" id="pinjamAksi"> 
       <p class="text-sm text-slate-600 mb-5" id="pinjamDesc"></p>
@@ -121,7 +146,7 @@
     <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto transform transition-all dark:bg-[#1e293b]">
       <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2"><div class="bg-emerald-100 text-emerald-600 p-2 rounded-lg"><i class="fa-solid fa-box-open"></i></div><h3 class="text-base font-extrabold text-slate-800">Barang Baru</h3></div>
-        <button onclick="closeAddModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeAddModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form onsubmit="submitNewItem(event)" class="space-y-4" id="addItemForm">
         <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Barang</label><input type="text" id="newName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none"></div>
@@ -138,7 +163,7 @@
           <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Satuan</label><input type="text" id="newUnit" placeholder="pcs" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none"></div>
         </div>
         <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Keterangan</label><input type="text" id="newDesc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none"></div>
-        <button type="submit" id="submitBtn" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Simpan Data</button>
+        <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition-all">Simpan Data</button>
       </form>
     </div>
   </div>
@@ -148,7 +173,7 @@
     <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto transform transition-all dark:bg-[#1e293b]">
       <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2"><div class="bg-amber-100 text-amber-600 p-2 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></div><h3 class="text-base font-extrabold text-slate-800">Edit Barang</h3></div>
-        <button onclick="closeEditItemModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeEditItemModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form onsubmit="submitEditItem(event)" class="space-y-4" id="editItemForm">
         <input type="hidden" id="editId">
@@ -166,7 +191,23 @@
           <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Satuan</label><input type="text" id="editUnit" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none"></div>
         </div>
         <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Keterangan</label><input type="text" id="editDesc" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none"></div>
-        <button type="submit" id="submitEditBtn" class="w-full bg-amber-500 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95">Update Data</button>
+        <button type="submit" id="submitEditBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition-all">Update Data</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Tambah Tugas Pra-Hari H (CHECKLIST) -->
+  <div id="addTugasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl transform transition-all dark:bg-[#1e293b]">
+      <div class="flex justify-between items-center mb-5">
+        <div class="flex items-center gap-2"><div class="bg-indigo-100 text-indigo-600 p-2 rounded-lg"><i class="fa-solid fa-user-gear"></i></div><h3 class="text-base font-extrabold text-slate-800">Set Tugas Kru</h3></div>
+        <button onclick="closeAddTugasModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="submitNewTugas(event)" class="space-y-4">
+        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Kru / Relawan</label><input type="text" id="tugasNama" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none" placeholder="Misal: Budi"></div>
+        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Area Tugas</label><input type="text" id="tugasArea" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none" placeholder="Misal: Toilet Lt. 2"></div>
+        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Alat yang Harus Dibawa</label><textarea id="tugasAlat" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none" rows="3" placeholder="Misal: Sapu (1), Wipol (1), Lap (2)"></textarea></div>
+        <button type="submit" id="submitTugasBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg active:scale-95 transition-all">Simpan Tugas Pra-Acara</button>
       </form>
     </div>
   </div>
@@ -176,20 +217,21 @@
     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl transform transition-all dark:bg-[#1e293b]">
       <div class="flex justify-between items-start mb-4">
         <div><div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-indigo-100 text-indigo-600 text-xl"><i class="fa-solid fa-file-pdf"></i></div><h3 class="text-base font-extrabold text-slate-800">Cetak Laporan</h3></div>
-        <button onclick="closeReportModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeReportModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="space-y-3">
-        <button onclick="generatePDF('stok')" class="w-full text-left bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-4 group">
-           <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-indigo-500"><i class="fa-solid fa-boxes-stacked"></i></div>
+        <button onclick="generatePDF('stok')" class="w-full text-left bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-4 group hover:border-indigo-300 transition-colors">
+           <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-indigo-500 shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
            <div><h4 class="font-bold text-slate-800 text-sm">Laporan Stok Akhir</h4></div>
         </button>
-        <button onclick="generatePDF('penggunaan')" class="w-full text-left bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-4 group">
-           <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-indigo-500"><i class="fa-solid fa-users-viewfinder"></i></div>
+        <button onclick="generatePDF('penggunaan')" class="w-full text-left bg-slate-50 border border-slate-200 p-4 rounded-xl flex items-center gap-4 group hover:border-indigo-300 transition-colors">
+           <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-indigo-500 shadow-sm"><i class="fa-solid fa-users-viewfinder"></i></div>
            <div><h4 class="font-bold text-slate-800 text-sm">Laporan Penggunaan</h4></div>
         </button>
       </div>
     </div>
   </div>
+
   <script src="js/app.js"></script>
 </body>
 </html>
